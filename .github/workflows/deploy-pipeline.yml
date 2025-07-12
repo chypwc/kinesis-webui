@@ -50,6 +50,6 @@ jobs:
 
       - name: Update API URL and Webapp
         run: |
-          make upload-webapp
           make update-api-url
+          make upload-webapp
           make deploy-webapp
