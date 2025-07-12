@@ -37,7 +37,7 @@ update-api-url:
 	fi && \
 	echo "🔍 Raw output:" && \
 	cat /tmp/api_url.txt && \
-	API_URL=$$(cat /tmp/api_url.txt | grep "https://" | head -1) && \
+	API_URL=$$(cat /tmp/api_url.txt | grep "https://" | sed 's/::debug::.*$//' | head -1) && \
 	echo "🔍 Extracted API_URL: '$$API_URL'" && \
 	if [ -z "$$API_URL" ]; then \
 		echo "❌ No API URL found in terraform output." && \
@@ -86,6 +86,6 @@ deploy-webapp:
 	cd ../.. && \
 	echo "✅ Webapp deployed successfully!" && \
 	echo "🌐 CloudFront URL: $$WEBAPP_URL" && \
-	echo "📡 S3 Website URL: http://$$BUCKET_NAME.s3-website-$$AWS_DEFAULT_REGION.amazonaws.com"
+	echo "📡 S3 Website URL: http://$$BUCKET_NAME.s3-website-ap-southeast-2.amazonaws.com"
 
  
