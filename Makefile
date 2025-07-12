@@ -27,9 +27,9 @@ update-api-url:
 	@cd environments/dev && \
 	echo "🔍 Running terraform output for API URL..." && \
 	if [[ "$$OSTYPE" == "darwin"* ]]; then \
-		API_URL=$$(terraform output -raw api_invoke_url) && \
+		API_URL=$$(terraform output -raw api_invoke_url); \
 	else \
-		API_URL=$$(terraform output -raw api_invoke_url | sed 's/::debug::Terraform exited with code 0.//g' | grep -E "^https://" | head -1) && \
+		API_URL=$$(terraform output -raw api_invoke_url | sed 's/::debug::Terraform exited with code 0.//g' | grep -E "^https://" | head -1); \
 	fi && \
 	echo "🔍 Extracted API_URL: '$$API_URL'" && \
 	if [ -z "$$API_URL" ]; then \
