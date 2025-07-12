@@ -13,8 +13,8 @@ cat /tmp/bucket_name.txt
 
 echo "🔍 Exit code for terraform output: $?"
 
-# Extract the bucket name
-BUCKET_NAME=$(grep -E "^[a-zA-Z0-9.-]+$" /tmp/bucket_name.txt | head -1)
+# Extract the bucket name, ignoring lines with debug information
+BUCKET_NAME=$(grep -E "^[a-zA-Z0-9.-]+$" /tmp/bucket_name.txt | grep -v "::" | head -1)
 
 echo "🔍 Debug: BUCKET_NAME is '$BUCKET_NAME'"
 
