@@ -5,7 +5,7 @@
 # including the webapp hosting with S3 and CloudFront.
 # 
 # Architecture:
-# API Gateway → Lambda → Kinesis → Firehose → S3 (Data)
+# API Gateway → Kinesis → Firehose → S3 (Data)
 # Webapp: S3 (Hosting) → CloudFront (CDN)
 # =============================================================================
 
@@ -41,25 +41,15 @@ module "firehose" {
   env                = var.env
 }
 
-# Lambda function
-module "lambda" {
-  source = "../../modules/lambda"
-
-  function_name       = var.lambda_function_name
-  handler             = var.lambda_handler
-  runtime             = var.lambda_runtime
-  kinesis_stream_name = module.kinesis.stream_name
-  env                 = var.env
-}
-
 # API Gateway
 module "api_gateway" {
   source = "../../modules/api-gateway"
 
-  api_name             = var.api_gateway_name
-  lambda_invoke_arn    = module.lambda.invoke_arn
-  lambda_function_name = module.lambda.function_name
-  env                  = var.env
+  api_name            = var.api_gateway_name
+  env                 = var.env
+  region              = data.aws_region.current.name
+  kinesis_stream_arn  = module.kinesis.stream_arn
+  kinesis_stream_name = module.kinesis.stream_name
 }
 
 # =============================================================================

@@ -33,15 +33,15 @@ output "firehose_stream_arn" {
   value       = module.firehose.firehose_stream_arn
 }
 
-output "lambda_function_name" {
-  description = "Name of the Lambda function"
-  value       = module.lambda.function_name
-}
+# output "lambda_function_name" {
+#   description = "Name of the Lambda function"
+#   value       = module.lambda.function_name
+# }
 
-output "lambda_function_arn" {
-  description = "ARN of the Lambda function"
-  value       = module.lambda.function_arn
-}
+# output "lambda_function_arn" {
+#   description = "ARN of the Lambda function"
+#   value       = module.lambda.function_arn
+# }
 
 output "api_gateway_id" {
   description = "ID of the API Gateway"
@@ -50,7 +50,7 @@ output "api_gateway_id" {
 
 output "api_invoke_url" {
   description = "Invoke URL for the API Gateway"
-  value       = module.api_gateway.invoke_url
+  value       = module.api_gateway.api_invoke_url
 }
 
 # Webapp Hosting Outputs
@@ -83,3 +83,4 @@ output "webapp_url" {
   description = "URL of the deployed webapp"
   value       = module.cloudfront.webapp_url
 }
+
