@@ -33,7 +33,7 @@ jobs:
         with:
           terraform_version: ${{ env.TF_VERSION }}
       - name: Deploy Kinesis Pipeline
-        if: ${{ github.event.inputs.deployResource }}
+        if: ${{ github.event.inputs.deployResource == 'true' }}
         run: |
           cd environments/dev
           terraform init
