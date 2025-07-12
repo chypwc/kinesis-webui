@@ -4,7 +4,7 @@
 # This Makefile provides automation for common development tasks
 # 
 # Available targets:
-# - update-api-url: Updates the API Gateway URL in webapp/js/app.js
+# - update-api-url: Updates the API Gateway URL in webapp/js/app.js and webapp/server.js
 # =============================================================================
 
 # =============================================================================
@@ -16,18 +16,17 @@
 # Usage: make update-api-url
 #
 # What it does:
-# 1. Runs 'terraform output -raw api_invoke_url' to get the current API Gateway URL
-# 2. Escapes special characters for sed replacement
-# 3. Updates the API_GATEWAY_URL constant in webapp/js/app.js
-# 4. Shows confirmation message with the updated URL
-#
-# Prerequisites:
-# - Terraform must be initialized and applied
-# - Must be run from project root directory
+# 1. Gets the API Gateway URL from Terraform output
+# 2. Updates the API_GATEWAY_URL constant in webapp/js/app.js
+# 3. Updates the API_GATEWAY_URL constant in webapp/server.js
+# 4. Shows confirmation message
 # =============================================================================
 update-api-url:
-	@echo "Updating API Gateway URL from Terraform output..."
-	@API_URL=$$(cd environments/dev && terraform output -raw api_invoke_url) && \
-	ESCAPED_URL=$$(printf '%s\n' "$$API_URL/submit" | sed 's/[&/]/\\&/g') && \
-	sed -i '' "s|const API_GATEWAY_URL = .*;|const API_GATEWAY_URL = '$$ESCAPED_URL';|" webapp/js/app.js && \
-	echo "Updated API_GATEWAY_URL to: $$API_URL/submit in webapp/js/app.js" 
+	@echo "🔄 Updating API Gateway URL..."
+	@cd environments/dev && \
+	API_URL=$$(terraform output -raw api_invoke_url) && \
+	FULL_URL="$$API_URL/submit" && \
+	cd ../.. && \
+	sed -i '' "s|const API_GATEWAY_URL = .*|const API_GATEWAY_URL = '$$FULL_URL'|" webapp/js/app.js && \
+	sed -i '' "s|const API_GATEWAY_URL = .*|const API_GATEWAY_URL = '$$FULL_URL'|" webapp/server.js && \
+	echo "✅ Updated API Gateway URL to: $$FULL_URL" 
