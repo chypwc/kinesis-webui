@@ -76,6 +76,33 @@ resource "aws_iam_role_policy" "firehose_policy" {
   })
 }
 
+# IAM policy for Firehose CloudWatch logging
+# This allows Firehose to write logs to CloudWatch for monitoring and debugging
+resource "aws_iam_role_policy" "firehose_logging" {
+  name = "${var.stream_name}-logging-policy"
+  role = aws_iam_role.firehose_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams"
+        ]
+        Resource = [
+          "arn:aws:logs:*:*:log-group:/aws/kinesis-firehose/${var.stream_name}",
+          "arn:aws:logs:*:*:log-group:/aws/kinesis-firehose/${var.stream_name}:*"
+        ]
+      }
+    ]
+  })
+}
+
 # Firehose delivery stream configuration
 # This stream continuously reads from Kinesis and delivers to S3
 resource "aws_kinesis_firehose_delivery_stream" "api_firehose" {

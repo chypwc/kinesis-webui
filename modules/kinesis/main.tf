@@ -23,3 +23,16 @@ resource "aws_kinesis_stream" "api_stream" {
     Purpose     = "API data streaming"
   }
 }
+
+# CloudWatch monitoring for Kinesis stream
+# This enables detailed monitoring and logging for the Kinesis stream
+resource "aws_cloudwatch_log_group" "kinesis_logs" {
+  name              = "/aws/kinesis/${var.stream_name}"
+  retention_in_days = 14
+
+  tags = {
+    Name        = "${var.stream_name}-logs"
+    Environment = var.env
+    Purpose     = "Kinesis stream monitoring"
+  }
+}

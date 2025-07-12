@@ -70,6 +70,33 @@ resource "aws_iam_role_policy" "lambda_kinesis" {
   })
 }
 
+# IAM policy for enhanced CloudWatch logging
+# This allows Lambda to create and write to CloudWatch Logs for better monitoring
+resource "aws_iam_role_policy" "lambda_logging" {
+  name = "${var.function_name}-logging-policy"
+  role = aws_iam_role.lambda_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams"
+        ]
+        Resource = [
+          "arn:aws:logs:*:*:log-group:/aws/lambda/${var.function_name}",
+          "arn:aws:logs:*:*:log-group:/aws/lambda/${var.function_name}:*"
+        ]
+      }
+    ]
+  })
+}
+
 # Lambda function configuration
 # This creates the actual serverless function that processes API requests
 resource "aws_lambda_function" "api_lambda" {
