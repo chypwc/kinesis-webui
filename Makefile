@@ -28,18 +28,15 @@ update-api-url:
 	API_URL=$$(terraform output -raw api_invoke_url) && \
 	FULL_URL="$$API_URL/submit" && \
 	cd ../.. && \
-	if sed -i '' "s|const API_GATEWAY_URL = .*;|const API_GATEWAY_URL = '$$FULL_URL';|" webapp/js/app.js; then \
-		echo "✅ Updated API_GATEWAY_URL in webapp/js/app.js"; \
+	if [[ "$$OSTYPE" == "darwin"* ]]; then \
+		sed -i '' "s|const API_GATEWAY_URL = .*;|const API_GATEWAY_URL = '$$FULL_URL';|" webapp/js/app.js; \
+		sed -i '' "s|const API_GATEWAY_URL = .*;|const API_GATEWAY_URL = '$$FULL_URL';|" webapp/server.js; \
 	else \
-		echo "❌ Failed to update webapp/js/app.js"; \
-		exit 1; \
+		sed -i "s|const API_GATEWAY_URL = .*;|const API_GATEWAY_URL = '$$FULL_URL';|" webapp/js/app.js; \
+		sed -i "s|const API_GATEWAY_URL = .*;|const API_GATEWAY_URL = '$$FULL_URL';|" webapp/server.js; \
 	fi && \
-	if sed -i '' "s|const API_GATEWAY_URL = .*;|const API_GATEWAY_URL = '$$FULL_URL';|" webapp/server.js; then \
-		echo "✅ Updated API_GATEWAY_URL in webapp/server.js"; \
-	else \
-		echo "❌ Failed to update webapp/server.js"; \
-		exit 1; \
-	fi && \
+	echo "✅ Updated API_GATEWAY_URL in webapp/js/app.js" && \
+	echo "✅ Updated API_GATEWAY_URL in webapp/server.js" && \
 	echo "🎉 Successfully updated API Gateway URL to: $$FULL_URL"
 
 # =============================================================================
