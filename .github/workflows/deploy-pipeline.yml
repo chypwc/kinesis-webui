@@ -48,7 +48,7 @@ jobs:
           terraform apply -auto-approve
           cd ../..
 
-      - name: Update API URL and Webapp
+      - name: Update API URL and deploy Webapp
         run: |
           make update-api-url
           make deploy-webapp

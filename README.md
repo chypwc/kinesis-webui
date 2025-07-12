@@ -2,21 +2,20 @@
 
 A complete serverless data pipeline that captures shopping cart events via a web application and streams them to AWS S3 through Kinesis Data Streams and Firehose.
 
-![](./images/webapp.png)
+![](./images/webapp_restapi.png)
 
 ## 📋 Project Overview
 
 This project implements a real-time data streaming pipeline using AWS services:
 
 ```
-Web App → API Gateway → Lambda → Kinesis → Firehose → S3
+Web App → API Gateway → Kinesis → Firehose → S3
 ```
 
 ### 🏗️ Architecture Components
 
 - **Web Application**: Modern UI for data input
-- **API Gateway**: HTTP API endpoint for receiving data
-- **Lambda Function**: Processes and forwards data to Kinesis
+- **API Gateway**: REST API endpoint for receiving data with direct Kinesis integration
 - **Kinesis Data Stream**: Real-time data streaming
 - **Firehose**: Batch delivery to S3
 - **S3 Bucket**: Data storage
@@ -49,9 +48,9 @@ make deploy-webapp
 
 ### 3. Access the Web Application
 
-The web UI URL and API Gateway URL can be found after deploying by GitHub Action workflow.
+The web UI URL and API Gateway URL can be found in the Terraform outputs after deployment.
 - **CloudFront URL**: `https://your-cloudfront-domain.cloudfront.net`
-- **S3 Website URL**: `http://your-bucket-name.s3-website-ap-southeast-2.amazonaws.com`
+- **API Gateway URL**: `https://<api-id>.execute-api.<region>.amazonaws.com/dev`
 
 
 ## 🌐 Web UI Deployment
@@ -116,11 +115,10 @@ kinesis/
 ## 📊 Data Flow
 
 1. **Web Application**: User submits shopping cart data
-2. **API Gateway**: Receives HTTP POST requests
-3. **Lambda Function**: Processes and forwards to Kinesis
-4. **Kinesis Data Stream**: Real-time streaming
-5. **Firehose**: Batches and delivers to S3
-6. **S3 Storage**: Long-term data storage
+2. **API Gateway**: Receives HTTP POST requests and forwards them directly to Kinesis
+3. **Kinesis Data Stream**: Real-time streaming
+4. **Firehose**: Batches and delivers to S3
+5. **S3 Storage**: Long-term data storage
 
 ## 🛠️ Development
 
@@ -128,7 +126,7 @@ kinesis/
 
 ```bash
 # Test API Gateway
-curl -X POST https://your-api-gateway-url/submit \
+curl -X POST https://your-api-gateway-url/dev/submit \
   -H "Content-Type: application/json" \
   -d '{"user_id":123,"product_ids":["4321"],"event":"add_to_cart"}'
 
