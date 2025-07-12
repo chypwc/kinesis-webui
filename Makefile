@@ -76,7 +76,7 @@ deploy-webapp:
 	echo "🔍 Raw bucket output:" && \
 	cat /tmp/bucket_name.txt && \
 	echo "🔍 Exit code for terraform output: $$?" && \
-	BUCKET_NAME=$$(cat /tmp/bucket_name.txt | grep -v "::debug::" | grep -v "::error::" | grep -v "terraform-bin" | grep -v "Terraform exited" | head -1) && \
+	BUCKET_NAME=$$(cat /tmp/bucket_name.txt | grep -v "terraform-bin" | grep -v "::debug::" | grep -v "::error::" | grep -v "Terraform exited" | head -1 | cut -d':' -f1) && \
 	echo "🔍 Extracted BUCKET_NAME: '$$BUCKET_NAME'" && \
 	if [ -z "$$BUCKET_NAME" ]; then \
 		echo "❌ No bucket name found in terraform output." && \
