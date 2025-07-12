@@ -1,0 +1,32 @@
+name: Deploy Kinesis Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: "AWS region to deploy to"
+        required: true
+        default: "ap-southeast-2"
+jobs:
+  deploy-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        id: creds
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ github.event.inputs.region }}
+    
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy Kinesis Pipeline
+        run: |
+          cd environments/dev
+          terraform init
+          terraform plan
+          terraform apply -auto-approve
+          cd ../..
+          make update-api-url
