@@ -25,6 +25,10 @@
 update-api-url:
 	@echo "🔄 Updating API Gateway URL..."
 	@cd environments/dev && \
+	echo "🔍 Debug: Raw terraform output:" && \
+	terraform output -raw api_invoke_url 2>&1 && \
+	echo "🔍 Debug: Filtered output:" && \
+	terraform output -raw api_invoke_url 2>&1 | grep -v "::debug::" | grep -v "::error::" | head -1 && \
 	API_URL=$$(terraform output -raw api_invoke_url 2>&1 | grep -v "::debug::" | grep -v "::error::" | head -1) && \
 	FULL_URL="$$API_URL/submit" && \
 	cd ../.. && \
@@ -56,6 +60,10 @@ update-api-url:
 deploy-webapp:
 	@echo "🚀 Deploying webapp to S3..."
 	@cd environments/dev && \
+	echo "🔍 Debug: Raw terraform output:" && \
+	terraform output -raw webapp_bucket_name 2>&1 && \
+	echo "🔍 Debug: Filtered output:" && \
+	terraform output -raw webapp_bucket_name 2>&1 | grep -v "::debug::" | grep -v "::error::" | head -1 && \
 	BUCKET_NAME=$$(terraform output -raw webapp_bucket_name 2>&1 | grep -v "::debug::" | grep -v "::error::" | head -1) && \
 	echo "📦 S3 Bucket: $$BUCKET_NAME" && \
 	cd ../.. && \
