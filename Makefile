@@ -29,6 +29,7 @@ update-api-url:
 	terraform state list 2>/dev/null | head -5 || echo "❌ No terraform state found" && \
 	echo "🔍 Running terraform output..." && \
 	terraform output -raw api_invoke_url > /tmp/api_url.txt 2>&1; EXIT_CODE=$$? && \
+	echo "🔍 Terraform output command completed with exit code: $$EXIT_CODE" && \
 	echo "🔍 Exit code: $$EXIT_CODE" && \
 	if [ $$EXIT_CODE -ne 0 ]; then \
 		echo "❌ Failed to get terraform output (exit code: $$EXIT_CODE)" && \
@@ -82,6 +83,10 @@ deploy-webapp:
 	fi && \
 	echo "📦 S3 Bucket: $$BUCKET_NAME" && \
 	cd ../.. && \
+	if [ -z "$$BUCKET_NAME" ]; then \
+		echo "❌ Bucket name is empty. Cannot deploy to S3." && \
+		exit 1; \
+	fi && \
 	echo "📤 Uploading webapp files to S3..." && \
 	aws s3 sync webapp/ s3://$$BUCKET_NAME \
 		--exclude "node_modules/*" \
