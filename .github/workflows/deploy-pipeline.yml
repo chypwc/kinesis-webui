@@ -7,6 +7,10 @@ on:
         description: "AWS region to deploy to"
         required: true
         default: "ap-southeast-2"
+      deployResource:
+        description: "Deploy AWS resources?"
+        required: true
+        default: false
 jobs:
   deploy-pipeline:
     runs-on: ubuntu-latest
@@ -29,6 +33,7 @@ jobs:
         with:
           terraform_version: ${{ env.TF_VERSION }}
       - name: Deploy Kinesis Pipeline
+        if: ${{ github.event.inputs.deployResource }}
         run: |
           cd environments/dev
           terraform init
