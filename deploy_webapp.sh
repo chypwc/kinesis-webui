@@ -32,13 +32,7 @@ fi
 
 # Extract the web app URL
 echo "🔍 Running terraform output for web app URL..."
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOS
-    WEBAPP_URL=$(terraform output -raw webapp_url | cut -d':' -f1)
-else
-    # Assume Linux (Ubuntu)
-    WEBAPP_URL=$(terraform output -raw webapp_url | cut -d':' -f1)
-fi
+WEBAPP_URL=$(terraform output -raw webapp_url)
 
 echo "🌐 Web App URL: $WEBAPP_URL"
 
