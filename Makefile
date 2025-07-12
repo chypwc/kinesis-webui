@@ -38,8 +38,10 @@ update-api-url:
 	fi && \
 	FULL_URL="$$API_URL/submit" && \
 	cd ../.. && \
-	perl -pi -e "s|const API_GATEWAY_URL = .*;|const API_GATEWAY_URL = '$$FULL_URL';|" webapp/js/app.js && \
-	perl -pi -e "s|const API_GATEWAY_URL = .*;|const API_GATEWAY_URL = '$$FULL_URL';|" webapp/server.js && \
+	echo "🔍 Updating app.js..." && \
+	sed -i.bak "s|const API_GATEWAY_URL = .*|const API_GATEWAY_URL = '$$FULL_URL'|" webapp/js/app.js && \
+	echo "🔍 Updating server.js..." && \
+	sed -i.bak "s|const API_GATEWAY_URL = .*|const API_GATEWAY_URL = '$$FULL_URL'|" webapp/server.js && \
 	echo "✅ Updated API Gateway URL to: $$FULL_URL"
 
 # =============================================================================
@@ -77,9 +79,9 @@ deploy-webapp:
 	echo "🔍 Running terraform output for web app URL..." && \
 	cd environments/dev && \
 	if [[ "$$OSTYPE" == "darwin"* ]]; then \
-		WEBAPP_URL=$$(terraform output -raw webapp_url) && \
+		WEBAPP_URL=$$(terraform output -raw webapp_url); \
 	else \
-		WEBAPP_URL=$$(terraform output -raw webapp_url | sed 's/::debug::Terraform exited with code 0.//g' | grep -E "^https://" | head -1) && \
+		WEBAPP_URL=$$(terraform output -raw webapp_url | sed 's/::debug::Terraform exited with code 0.//g' | grep -E "^https://" | head -1); \
 	fi && \
 	echo "🌐 Web App URL: $$WEBAPP_URL" && \
 	cd ../.. && \
