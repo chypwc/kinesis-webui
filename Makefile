@@ -25,26 +25,21 @@
 update-api-url:
 	@echo "🔄 Updating API Gateway URL..."
 	@cd environments/dev && \
-	echo "🔍 Checking if terraform state exists..." && \
-	if [ ! -f .terraform.tfstate ]; then \
-		echo "❌ No terraform state found. Please run 'terraform apply' first."; \
-		echo "💡 You can also manually update the URL using: make update-api-url-manual"; \
+	terraform output -raw api_invoke_url > /tmp/api_url.txt 2>&1 && \
+	if [ $$? -ne 0 ]; then \
+		echo "❌ Failed to get terraform output. Please run 'terraform apply' first."; \
 		exit 1; \
 	fi && \
-	echo "🔍 Running terraform output..." && \
-	terraform output -raw api_invoke_url > /tmp/api_url.txt 2>&1 && \
-	echo "🔍 Checking output file..." && \
-	cat /tmp/api_url.txt && \
 	API_URL=$$(cat /tmp/api_url.txt | grep -v "::debug::" | grep -v "::error::" | grep -v "terraform-bin" | head -1) && \
-	echo "🔍 Extracted API_URL: $$API_URL" && \
+	if [ -z "$$API_URL" ]; then \
+		echo "❌ No API URL found in terraform output."; \
+		exit 1; \
+	fi && \
 	FULL_URL="$$API_URL/submit" && \
-	echo "🔍 Full URL: $$FULL_URL" && \
 	cd ../.. && \
 	perl -pi -e "s|const API_GATEWAY_URL = .*;|const API_GATEWAY_URL = '$$FULL_URL';|" webapp/js/app.js && \
 	perl -pi -e "s|const API_GATEWAY_URL = .*;|const API_GATEWAY_URL = '$$FULL_URL';|" webapp/server.js && \
-	echo "✅ Updated API_GATEWAY_URL in webapp/js/app.js" && \
-	echo "✅ Updated API_GATEWAY_URL in webapp/server.js" && \
-	echo "🎉 Successfully updated API Gateway URL to: $$FULL_URL"
+	echo "✅ Updated API Gateway URL to: $$FULL_URL"
 
 # =============================================================================
 # DEPLOY WEBAPP TO S3
@@ -85,21 +80,4 @@ deploy-webapp:
 	echo "🌐 CloudFront URL: $$WEBAPP_URL" && \
 	echo "📡 S3 Website URL: http://$$BUCKET_NAME.s3-website-$$AWS_DEFAULT_REGION.amazonaws.com"
 
-# =============================================================================
-# MANUAL API GATEWAY URL UPDATE
-# =============================================================================
-# This target allows manual update of the API Gateway URL when terraform state
-# is not available or when you want to use a different URL.
-#
-# Usage: make update-api-url-manual
-# =============================================================================
-update-api-url-manual:
-	@echo "🔄 Manual API Gateway URL update..."
-	@echo "💡 Please enter your API Gateway URL (without /submit):"
-	@read -p "API Gateway URL: " API_URL; \
-	FULL_URL="$$API_URL/submit"; \
-	perl -pi -e "s|const API_GATEWAY_URL = .*;|const API_GATEWAY_URL = '$$FULL_URL';|" webapp/js/app.js && \
-	perl -pi -e "s|const API_GATEWAY_URL = .*;|const API_GATEWAY_URL = '$$FULL_URL';|" webapp/server.js && \
-	echo "✅ Updated API_GATEWAY_URL in webapp/js/app.js" && \
-	echo "✅ Updated API_GATEWAY_URL in webapp/server.js" && \
-	echo "🎉 Successfully updated API Gateway URL to: $$FULL_URL" 
+ 
