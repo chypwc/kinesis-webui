@@ -1,6 +1,6 @@
 output "lambda_log_group_name" {
-  description = "Name of the Lambda CloudWatch log group"
-  value       = aws_cloudwatch_log_group.lambda_logs.name
+  description = "Name of the Lambda CloudWatch log group (auto-created by Lambda)"
+  value       = "/aws/lambda/${var.lambda_function_name}"
 }
 
 output "firehose_log_group_name" {
@@ -26,4 +26,4 @@ output "kinesis_errors_alarm_arn" {
 output "firehose_errors_alarm_arn" {
   description = "ARN of the Firehose errors CloudWatch alarm"
   value       = aws_cloudwatch_metric_alarm.firehose_errors.arn
-} 
+}

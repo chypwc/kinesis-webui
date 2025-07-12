@@ -8,17 +8,9 @@
 # Components: CloudWatch Alarms, Log Groups, Metrics
 # =============================================================================
 
-# CloudWatch Log Group for Lambda function logs
-resource "aws_cloudwatch_log_group" "lambda_logs" {
-  name              = "/aws/lambda/${var.lambda_function_name}"
-  retention_in_days = 14
-
-  tags = {
-    Name        = "${var.lambda_function_name}-logs"
-    Environment = var.env
-    Purpose     = "Lambda function monitoring"
-  }
-}
+# Note: Lambda automatically creates its own log group when it runs
+# We don't need to create it here to avoid conflicts
+# The log group will be created automatically at: /aws/lambda/${var.lambda_function_name}
 
 # CloudWatch Log Group for Firehose delivery stream logs
 resource "aws_cloudwatch_log_group" "firehose_logs" {
@@ -126,4 +118,4 @@ resource "aws_cloudwatch_metric_alarm" "firehose_errors" {
     Environment = var.env
     Purpose     = "Firehose delivery monitoring"
   }
-} 
+}
