@@ -76,6 +76,9 @@ deploy-webapp:
 		--exclude "*.log" \
 		--exclude ".git/*" && \
 	echo "✅ Webapp files uploaded successfully to s3://$$BUCKET_NAME" && \
+	echo "🔄 Invalidating CloudFront cache..." && \
+	aws cloudfront create-invalidation --distribution-id E29YHTLTWBBQ6R --paths "/*" && \
+	echo "✅ CloudFront cache invalidated" && \
 	echo "🔍 Running terraform output for web app URL..." && \
 	cd environments/dev && \
 	if [[ "$$OSTYPE" == "darwin"* ]]; then \
