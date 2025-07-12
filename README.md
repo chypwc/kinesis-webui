@@ -4,19 +4,41 @@ A complete serverless data pipeline that captures shopping cart events via a web
 
 ![](./images/webapp.png)
 
+## 🏗️ Architecture
+
+This repository contains two distinct architectural approaches in separate branches:
+
+### `main` Branch (Default Architecture)
+
+The `main` branch uses a standard serverless pattern with an **API Gateway HTTP API** that triggers an **AWS Lambda function**.
+
+```
+Web App → API Gateway (HTTP API) → Lambda → Kinesis → Firehose → S3
+```
+
+This approach is easy to set up and is ideal for scenarios where you need to perform data validation, enrichment, or transformation logic within the Lambda function before sending the data to Kinesis.
+
+### `direct-apigw-kinesis` Branch (Low-Latency Architecture)
+
+For a lower-latency solution, the `direct-apigw-kinesis` branch removes the Lambda function and uses a direct integration between an **API Gateway REST API** and Kinesis.
+
+```
+Web App → API Gateway (REST API) → Kinesis → Firehose → S3
+```
+
+This architecture is more cost-effective and performant as it bypasses the Lambda invocation overhead. It is suitable for high-throughput use cases where data can be sent directly to the stream without intermediate processing.
+
+---
+
 ## 📋 Project Overview
 
 This project implements a real-time data streaming pipeline using AWS services:
 
-```
-Web App → API Gateway → Lambda → Kinesis → Firehose → S3
-```
-
-### 🏗️ Architecture Components
+### Architecture Components
 
 - **Web Application**: Modern UI for data input
-- **API Gateway**: HTTP API endpoint for receiving data
-- **Lambda Function**: Processes and forwards data to Kinesis
+- **API Gateway**: An HTTP API or REST API endpoint for receiving data
+- **Lambda Function** (`main` branch only): Processes and forwards data to Kinesis
 - **Kinesis Data Stream**: Real-time data streaming
 - **Firehose**: Batch delivery to S3
 - **S3 Bucket**: Data storage
