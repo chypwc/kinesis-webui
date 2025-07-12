@@ -77,8 +77,21 @@ deploy-webapp:
 		--exclude ".git/*" && \
 	echo "✅ Webapp files uploaded successfully to s3://$$BUCKET_NAME" && \
 	echo "🔄 Invalidating CloudFront cache..." && \
-	aws cloudfront create-invalidation --distribution-id E29YHTLTWBBQ6R --paths "/*" && \
-	echo "✅ CloudFront cache invalidated" && \
+	cd environments/dev && \
+	echo "🔍 Getting CloudFront distribution ID..." && \
+	if [[ "$$OSTYPE" == "darwin"* ]]; then \
+		DISTRIBUTION_ID=$$(terraform output -raw cloudfront_distribution_id 2>/dev/null || echo ""); \
+	else \
+		DISTRIBUTION_ID=$$(terraform output -raw cloudfront_distribution_id 2>/dev/null | sed 's/::debug::Terraform exited with code 0.//g' | grep -E "^[A-Z0-9]+" | head -1 || echo ""); \
+	fi && \
+	echo "🔍 Distribution ID: '$$DISTRIBUTION_ID'" && \
+	cd ../.. && \
+	if [ -n "$$DISTRIBUTION_ID" ]; then \
+		aws cloudfront create-invalidation --distribution-id $$DISTRIBUTION_ID --paths "/*" && \
+		echo "✅ CloudFront cache invalidated for distribution: $$DISTRIBUTION_ID"; \
+	else \
+		echo "⚠️  No CloudFront distribution ID found. Skipping cache invalidation."; \
+	fi && \
 	echo "🔍 Running terraform output for web app URL..." && \
 	cd environments/dev && \
 	if [[ "$$OSTYPE" == "darwin"* ]]; then \
