@@ -25,20 +25,12 @@
 update-api-url:
 	@echo "🔄 Updating API Gateway URL..."
 	@cd environments/dev && \
-	echo "🔍 Checking terraform state..." && \
-	terraform state list 2>/dev/null | head -5 || echo "❌ No terraform state found" && \
-	echo "🔍 Running terraform output..." && \
-	terraform output -raw api_invoke_url > /tmp/api_url.txt 2>&1; EXIT_CODE=$$? && \
-	echo "🔍 Terraform output command completed with exit code: $$EXIT_CODE" && \
-	echo "🔍 Exit code: $$EXIT_CODE" && \
-	if [ $$EXIT_CODE -ne 0 ]; then \
-		echo "❌ Failed to get terraform output (exit code: $$EXIT_CODE)" && \
-		echo "💡 Please run 'terraform apply' first to create the infrastructure" && \
-		exit 1; \
+	echo "🔍 Running terraform output for API URL..." && \
+	if [[ "$$OSTYPE" == "darwin"* ]]; then \
+		API_URL=$$(terraform output -raw api_invoke_url) && \
+	else \
+		API_URL=$$(terraform output -raw api_invoke_url | sed 's/::debug::Terraform exited with code 0.//g' | grep -E "^https://" | head -1) && \
 	fi && \
-	echo "🔍 Raw output:" && \
-	cat /tmp/api_url.txt && \
-	API_URL=$$(cat /tmp/api_url.txt | grep "https://" | cut -d':' -f1-3 | sed 's/:$$//' | head -1) && \
 	echo "🔍 Extracted API_URL: '$$API_URL'" && \
 	if [ -z "$$API_URL" ]; then \
 		echo "❌ No API URL found in terraform output." && \
@@ -103,4 +95,26 @@ upload-webapp:
 deploy-webapp:
 	@echo "🚀 Deploying webapp..."
 	@make upload-webapp
-	@./deploy_webapp.sh
+	@echo "🔍 Running terraform output for bucket name..."
+	@cd environments/dev && \
+	terraform output -raw webapp_bucket_name > /tmp/bucket_name.txt 2>&1 && \
+	echo "🔍 Raw bucket output:" && \
+	cat /tmp/bucket_name.txt && \
+	echo "🔍 Exit code for terraform output: $$?" && \
+	BUCKET_NAME=$$(grep -E "^[a-zA-Z0-9.-]+" /tmp/bucket_name.txt | cut -d':' -f1) && \
+	echo "🔍 Debug: BUCKET_NAME is '$$BUCKET_NAME'" && \
+	if [ -z "$$BUCKET_NAME" ]; then \
+		echo "❌ No valid bucket name found in terraform output." && \
+		echo "🔍 Using bucket name from terraform.tfvars..." && \
+		BUCKET_NAME=$$(grep "webapp_bucket_name" terraform.tfvars | cut -d'=' -f2 | tr -d ' "') && \
+		echo "🔍 Debug: BUCKET_NAME from tfvars is '$$BUCKET_NAME'" && \
+	fi && \
+	echo "🔍 Running terraform output for web app URL..." && \
+	if [[ "$$OSTYPE" == "darwin"* ]]; then \
+		WEBAPP_URL=$$(terraform output -raw webapp_url) && \
+	else \
+		WEBAPP_URL=$$(terraform output -raw webapp_url | sed 's/::debug::Terraform exited with code 0.//g' | grep -E "^https://" | head -1) && \
+	fi && \
+	echo "🌐 Web App URL: $$WEBAPP_URL" && \
+	cd ../.. && \
+	echo "✅ Deployment completed successfully."
