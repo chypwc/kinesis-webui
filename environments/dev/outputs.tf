@@ -1,3 +1,8 @@
+# =============================================================================
+# OUTPUTS FOR DEV ENVIRONMENT
+# =============================================================================
+
+# Data Pipeline Outputs
 output "s3_bucket_name" {
   description = "Name of the S3 bucket for Firehose delivery"
   value       = module.s3.bucket_id
@@ -46,4 +51,35 @@ output "api_gateway_id" {
 output "api_invoke_url" {
   description = "Invoke URL for the API Gateway"
   value       = module.api_gateway.invoke_url
+}
+
+# Webapp Hosting Outputs
+output "webapp_bucket_name" {
+  description = "Name of the S3 bucket for webapp hosting"
+  value       = module.s3_webapp.bucket_id
+}
+
+output "webapp_bucket_arn" {
+  description = "ARN of the S3 bucket for webapp hosting"
+  value       = module.s3_webapp.bucket_arn
+}
+
+output "webapp_s3_website_endpoint" {
+  description = "S3 website endpoint for the webapp"
+  value       = module.s3_webapp.website_endpoint
+}
+
+output "cloudfront_distribution_id" {
+  description = "ID of the CloudFront distribution"
+  value       = module.cloudfront.distribution_id
+}
+
+output "cloudfront_domain_name" {
+  description = "Domain name of the CloudFront distribution"
+  value       = module.cloudfront.distribution_domain_name
+}
+
+output "webapp_url" {
+  description = "URL of the deployed webapp"
+  value       = module.cloudfront.webapp_url
 }
