@@ -72,7 +72,7 @@ deploy-webapp:
 	@echo "🚀 Deploying webapp to S3..."
 	@cd environments/dev && \
 	terraform output -raw webapp_bucket_name > /tmp/bucket_name.txt 2>&1 && \
-	BUCKET_NAME=$$(cat /tmp/bucket_name.txt | grep -v "::debug::" | grep -v "::error::" | grep -v "terraform-bin" | head -1) && \
+	BUCKET_NAME=$$(cat /tmp/bucket_name.txt | grep -E "^[a-zA-Z0-9\-]+$" | head -1) && \
 	echo "📦 S3 Bucket: $$BUCKET_NAME" && \
 	cd ../.. && \
 	echo "📤 Uploading webapp files to S3..." && \
@@ -82,7 +82,7 @@ deploy-webapp:
 		--exclude ".git/*" && \
 	cd environments/dev && \
 	terraform output -raw webapp_url > /tmp/webapp_url.txt 2>&1 && \
-	WEBAPP_URL=$$(cat /tmp/webapp_url.txt | grep -v "::debug::" | grep -v "::error::" | grep -v "terraform-bin" | head -1) && \
+	WEBAPP_URL=$$(cat /tmp/webapp_url.txt | grep "https://" | head -1) && \
 	cd ../.. && \
 	echo "✅ Webapp deployed successfully!" && \
 	echo "🌐 CloudFront URL: $$WEBAPP_URL" && \
