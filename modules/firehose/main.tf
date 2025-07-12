@@ -76,6 +76,9 @@ resource "aws_iam_role_policy" "firehose_policy" {
   })
 }
 
+# Note: CloudWatch log group is created by the monitoring module
+# to avoid conflicts. The log group path is: /aws/kinesis-firehose/${var.stream_name}
+
 # IAM policy for Firehose CloudWatch logging
 # This allows Firehose to write logs to CloudWatch for monitoring and debugging
 resource "aws_iam_role_policy" "firehose_logging" {
@@ -96,7 +99,8 @@ resource "aws_iam_role_policy" "firehose_logging" {
         ]
         Resource = [
           "arn:aws:logs:*:*:log-group:/aws/kinesis-firehose/${var.stream_name}",
-          "arn:aws:logs:*:*:log-group:/aws/kinesis-firehose/${var.stream_name}:*"
+          "arn:aws:logs:*:*:log-group:/aws/kinesis-firehose/${var.stream_name}:*",
+          "arn:aws:logs:*:*:log-group:/aws/kinesis-firehose/${var.stream_name}:log-stream:S3DeliveryErrors"
         ]
       }
     ]
@@ -124,6 +128,18 @@ resource "aws_kinesis_firehose_delivery_stream" "api_firehose" {
     # Using uncompressed format as specified in pipeline requirements
     # This ensures data is human-readable and easily processable
     compression_format = "UNCOMPRESSED"
+
+    # CloudWatch error logging configuration
+    # This enables Firehose to log delivery errors to CloudWatch Logs
+    # for better monitoring and debugging of delivery failures
+    dynamic "cloudwatch_logging_options" {
+      for_each = var.enable_cloudwatch_logging ? [1] : []
+      content {
+        enabled         = true
+        log_group_name  = "/aws/kinesis-firehose/${var.stream_name}"
+        log_stream_name = "S3DeliveryErrors"
+      }
+    }
   }
 
   tags = {

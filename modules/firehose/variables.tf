@@ -29,3 +29,9 @@ variable "buffer_size" {
   description = "Buffer size in MB"
   default     = 1
 }
+
+variable "enable_cloudwatch_logging" {
+  type        = bool
+  description = "Enable CloudWatch error logging for Firehose delivery"
+  default     = true
+}

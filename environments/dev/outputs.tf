@@ -83,29 +83,3 @@ output "webapp_url" {
   description = "URL of the deployed webapp"
   value       = module.cloudfront.webapp_url
 }
-
-# Monitoring Outputs
-output "lambda_log_group_name" {
-  description = "Name of the Lambda CloudWatch log group"
-  value       = module.monitoring.lambda_log_group_name
-}
-
-output "firehose_log_group_name" {
-  description = "Name of the Firehose CloudWatch log group"
-  value       = module.monitoring.firehose_log_group_name
-}
-
-output "lambda_errors_alarm_arn" {
-  description = "ARN of the Lambda errors CloudWatch alarm"
-  value       = module.monitoring.lambda_errors_alarm_arn
-}
-
-output "kinesis_errors_alarm_arn" {
-  description = "ARN of the Kinesis errors CloudWatch alarm"
-  value       = module.monitoring.kinesis_errors_alarm_arn
-}
-
-output "firehose_errors_alarm_arn" {
-  description = "ARN of the Firehose errors CloudWatch alarm"
-  value       = module.monitoring.firehose_errors_alarm_arn
-}

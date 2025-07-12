@@ -85,16 +85,5 @@ module "cloudfront" {
   env                            = var.env
 }
 
-# Monitoring and alerting
-module "monitoring" {
-  source = "../../modules/monitoring"
-
-  lambda_function_name = var.lambda_function_name
-  firehose_stream_name = var.firehose_stream_name
-  kinesis_stream_name  = var.kinesis_stream_name
-  env                  = var.env
-  alarm_actions        = [] # Add SNS topic ARNs here for notifications
-}
-
 # Data source for current region
 data "aws_region" "current" {}
