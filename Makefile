@@ -28,16 +28,8 @@ update-api-url:
 	API_URL=$$(terraform output -raw api_invoke_url) && \
 	FULL_URL="$$API_URL/submit" && \
 	cd ../.. && \
-	case "$$(uname)" in \
-		Darwin) \
-			sed -i '' "s|const API_GATEWAY_URL = .*;|const API_GATEWAY_URL = '$$FULL_URL';|" webapp/js/app.js; \
-			sed -i '' "s|const API_GATEWAY_URL = .*;|const API_GATEWAY_URL = '$$FULL_URL';|" webapp/server.js; \
-			;; \
-		*) \
-			sed -i "s|const API_GATEWAY_URL = .*;|const API_GATEWAY_URL = '$$FULL_URL';|" webapp/js/app.js; \
-			sed -i "s|const API_GATEWAY_URL = .*;|const API_GATEWAY_URL = '$$FULL_URL';|" webapp/server.js; \
-			;; \
-	esac && \
+	perl -pi -e "s|const API_GATEWAY_URL = .*;|const API_GATEWAY_URL = '$$FULL_URL';|" webapp/js/app.js && \
+	perl -pi -e "s|const API_GATEWAY_URL = .*;|const API_GATEWAY_URL = '$$FULL_URL';|" webapp/server.js && \
 	echo "✅ Updated API_GATEWAY_URL in webapp/js/app.js" && \
 	echo "✅ Updated API_GATEWAY_URL in webapp/server.js" && \
 	echo "🎉 Successfully updated API Gateway URL to: $$FULL_URL"
