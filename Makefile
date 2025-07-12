@@ -37,7 +37,7 @@ update-api-url:
 	fi && \
 	echo "🔍 Raw output:" && \
 	cat /tmp/api_url.txt && \
-	API_URL=$$(cat /tmp/api_url.txt | grep "https://" | cut -d':' -f1-3 | head -1) && \
+	API_URL=$$(cat /tmp/api_url.txt | grep "https://" | cut -d':' -f1-3 | sed 's/:$$//' | head -1) && \
 	echo "🔍 Extracted API_URL: '$$API_URL'" && \
 	if [ -z "$$API_URL" ]; then \
 		echo "❌ No API URL found in terraform output." && \
@@ -72,7 +72,14 @@ deploy-webapp:
 	@echo "🚀 Deploying webapp to S3..."
 	@cd environments/dev && \
 	terraform output -raw webapp_bucket_name > /tmp/bucket_name.txt 2>&1 && \
+	echo "🔍 Raw bucket output:" && \
+	cat /tmp/bucket_name.txt && \
 	BUCKET_NAME=$$(cat /tmp/bucket_name.txt | grep -E "^[a-zA-Z0-9\-]+$" | head -1) && \
+	echo "🔍 Extracted BUCKET_NAME: '$$BUCKET_NAME'" && \
+	if [ -z "$$BUCKET_NAME" ]; then \
+		echo "❌ No bucket name found in terraform output." && \
+		exit 1; \
+	fi && \
 	echo "📦 S3 Bucket: $$BUCKET_NAME" && \
 	cd ../.. && \
 	echo "📤 Uploading webapp files to S3..." && \
