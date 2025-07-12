@@ -14,12 +14,12 @@ Web App → API Gateway → Lambda → Kinesis → Firehose → S3
 
 ### 🏗️ Architecture Components
 
-- **Web Application**: Modern React-like UI for data input
+- **Web Application**: Modern UI for data input
 - **API Gateway**: HTTP API endpoint for receiving data
 - **Lambda Function**: Processes and forwards data to Kinesis
 - **Kinesis Data Stream**: Real-time data streaming
 - **Firehose**: Batch delivery to S3
-- **S3 Bucket**: Data storage with versioning
+- **S3 Bucket**: Data storage
 
 ## 🚀 Quick Start
 
@@ -32,289 +32,114 @@ Web App → API Gateway → Lambda → Kinesis → Firehose → S3
 ### 1. Deploy Infrastructure
 
 ```bash
-# Navigate to dev environment
 cd environments/dev
-
-# Initialize Terraform
 terraform init
-
-# Deploy infrastructure
 terraform apply
 ```
 
-### 2. Start Web Application
+### 2. Deploy Web Application
 
 ```bash
-# Navigate to webapp directory
-cd webapp
-
-# Install dependencies
-npm install
-
-# Start development server
-npm start
-```
-
-### 3. Update API Gateway URL
-
-```bash
-# From project root
+# Update API Gateway URL
 make update-api-url
+
+# Deploy to S3 + CloudFront
+make deploy-webapp
 ```
+
+### 3. Access the Web Application
+
+The web UI URL and API Gateway URL can be found after deploying by GitHub Action workflow.
+- **CloudFront URL**: `https://your-cloudfront-domain.cloudfront.net`
+- **S3 Website URL**: `http://your-bucket-name.s3-website-ap-southeast-2.amazonaws.com`
+
+
+## 🌐 Web UI Deployment
+
+### Architecture
+
+```
+Web App Files → S3 Bucket → CloudFront → Global CDN
+```
+
+### Deployment Commands
+
+```bash
+# Update API Gateway URL
+make update-api-url
+
+# Deploy to S3 + CloudFront
+make deploy-webapp
+```
+
+### Features
+
+- ✅ **Automatic API URL Updates**: From Terraform outputs
+- ✅ **Cross-Platform Support**: macOS and Ubuntu
+- ✅ **Cache Invalidation**: Automatic CloudFront cache clearing
+- ✅ **Secure Access**: S3 only accessible via CloudFront
+- ✅ **HTTPS Support**: SSL certificates via CloudFront
+- ✅ **Global CDN**: Fast worldwide access
+
+### Troubleshooting
+
+#### API Gateway URL Issues
+1. Check API Gateway is deployed and active
+2. Run `make update-api-url` to update the URL
+3. Run `make deploy-webapp` to upload updated files
 
 ## 📁 Project Structure
 
 ```
 kinesis/
-├── environments/
-│   └── dev/                 # Terraform configuration
-│       ├── main.tf         # Infrastructure resources
-│       ├── variables.tf    # Input variables
-│       ├── outputs.tf      # Output values
-│       └── terraform.tfvars # Variable values
-├── modules/
-│   ├── api-gateway/        # API Gateway module
-│   ├── firehose/          # Firehose delivery stream
-│   ├── kinesis/           # Kinesis data stream
-│   ├── lambda/            # Lambda function
-│   └── s3/               # S3 bucket
-├── webapp/               # Web application
-│   ├── index.html        # Main HTML file
-│   ├── css/styles.css    # Styling
-│   ├── js/app.js        # JavaScript logic
-│   ├── server.js        # Node.js server
-│   └── package.json     # Dependencies
-├── Makefile             # Build automation
-├── TODO.md             # Project tasks
-└── pipeline.md         # Architecture documentation
+├── environments/dev/        # Terraform configuration
+├── modules/                 # Terraform modules
+├── webapp/                  # Web application
+├── Makefile                 # Build automation
+└── README.md                # This file
 ```
 
 ## 🎯 Features
 
 ### Web Application
-
-- ✅ **Modern UI**: Responsive design with gradients and animations
-- ✅ **Form Validation**: Real-time validation for inputs
-- ✅ **Optional Product IDs**: Can submit data without products
-- ✅ **Real-time Feedback**: Live status updates and response logging
-- ✅ **Multiple Event Types**: Add, remove, update, checkout events
+- ✅ Modern responsive UI
+- ✅ Form validation
+- ✅ Real-time feedback
+- ✅ Multiple event types
 
 ### Infrastructure
-
-- ✅ **Serverless**: No servers to manage
-- ✅ **Scalable**: Auto-scaling based on demand
-- ✅ **Secure**: IAM roles and policies
-- ✅ **Monitored**: CloudWatch logging
+- ✅ Serverless architecture
+- ✅ Auto-scaling
+- ✅ Secure IAM roles
+- ✅ CloudWatch logging
 
 ## 📊 Data Flow
 
-### 1. Web Application Input
-
-```json
-{
-  "user_id": 12345,
-  "product_ids": ["PROD001", "PROD002"],
-  "event": "add_to_cart"
-}
-```
-
-### 2. API Gateway Processing
-
-- Receives HTTP POST requests
-- Validates input data
-- Forwards to Lambda function
-
-### 3. Lambda Function
-
-- Processes JSON payload
-- Adds timestamp and metadata
-- Sends to Kinesis stream
-
-### 4. Kinesis Data Stream
-
-- Real-time data streaming
-- 1 shard configuration
-- 24-hour retention
-
-### 5. Firehose Delivery
-
-- Batches data every 60 seconds
-- Delivers to S3 bucket
-- Uncompressed format
-
-### 6. S3 Storage
-
-- Versioned bucket
-- Organized by date/time
-- Long-term storage
+1. **Web Application**: User submits shopping cart data
+2. **API Gateway**: Receives HTTP POST requests
+3. **Lambda Function**: Processes and forwards to Kinesis
+4. **Kinesis Data Stream**: Real-time streaming
+5. **Firehose**: Batches and delivers to S3
+6. **S3 Storage**: Long-term data storage
 
 ## 🛠️ Development
-
-### Adding New Features
-
-1. **Update Lambda Function**:
-
-   ```bash
-   # Edit modules/lambda/lambda_function.py
-   # Run terraform apply to deploy
-   ```
-
-2. **Modify Web Application**:
-
-   ```bash
-   # Edit webapp/js/app.js
-   # Refresh browser to see changes
-   ```
-
-3. **Update Infrastructure**:
-   ```bash
-   # Edit Terraform files
-   # Run terraform plan && terraform apply
-   ```
 
 ### Testing
 
 ```bash
-# Test API Gateway directly
+# Test API Gateway
 curl -X POST https://your-api-gateway-url/submit \
   -H "Content-Type: application/json" \
-  -d '{"user_id":123,"product_ids":["P1"],"event":"add_to_cart"}'
+  -d '{"user_id":123,"product_ids":["4321"],"event":"add_to_cart"}'
 
 # Test web application
 open http://localhost:3001
 ```
 
-## 🔧 Configuration
-
-### Environment Variables
-
-- `AWS_REGION`: AWS region (default: ap-southeast-2)
-- `ENVIRONMENT`: Deployment environment (default: dev)
-
-### Terraform Variables
-
-- `firehose_bucket_name`: S3 bucket name
-- `kinesis_stream_name`: Kinesis stream name
-- `lambda_function_name`: Lambda function name
-- `api_gateway_name`: API Gateway name
-
-## 📈 Monitoring
-
-### CloudWatch Logs
-
-- Lambda function logs
-- API Gateway access logs
-- Firehose delivery logs
-
-### S3 Metrics
-
-- Bucket size and object count
-- Request metrics
-- Error rates
-
-## 🔒 Security
-
-### IAM Roles
-
-- **Lambda Role**: Basic execution + Kinesis permissions
-- **Firehose Role**: S3 write + Kinesis read permissions
-- **API Gateway**: Lambda invoke permissions
-
-### Network Security
-
-- API Gateway with CORS headers
-- S3 bucket with public access blocked
-- VPC isolation (if needed)
-
-## 🚀 Deployment
-
-### Production Deployment
-
-1. **Create Production Environment**:
-
-   ```bash
-   cp -r environments/dev environments/prod
-   ```
-
-2. **Update Variables**:
-
-   ```bash
-   # Edit environments/prod/terraform.tfvars
-   env = "prod"
-   ```
-
-3. **Deploy**:
-   ```bash
-   cd environments/prod
-   terraform apply
-   ```
-
-### CI/CD Pipeline
-
-```yaml
-# Example GitHub Actions workflow
-name: Deploy Pipeline
-on:
-  push:
-    branches: [main]
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: hashicorp/setup-terraform@v1
-      - run: |
-          cd environments/dev
-          terraform init
-          terraform apply -auto-approve
-```
-
-## 🧹 Cleanup
-
-### Remove All Resources
+### Local Development
 
 ```bash
-cd environments/dev
-terraform destroy
+cd webapp
+npm install
+npm start
 ```
-
-### Clean Local Files
-
-```bash
-# Remove Terraform state
-rm -rf .terraform/
-
-# Remove webapp dependencies
-rm -rf webapp/node_modules/
-```
-
-## 📚 Documentation
-
-- [pipeline.md](pipeline.md): Detailed architecture documentation
-- [TODO.md](TODO.md): Project tasks and progress
-- [webapp/README.md](webapp/README.md): Web application guide
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 📄 License
-
-MIT License - see LICENSE file for details.
-
-## 🆘 Support
-
-For issues and questions:
-
-1. Check the documentation
-2. Review CloudWatch logs
-3. Test with curl commands
-4. Create an issue in the repository
-
----
-
-**Built with ❤️ using AWS, Terraform, and Node.js**
