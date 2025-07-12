@@ -25,7 +25,7 @@
 update-api-url:
 	@echo "🔄 Updating API Gateway URL..."
 	@cd environments/dev && \
-	API_URL=$$(terraform output -raw api_invoke_url) && \
+	API_URL=$$(terraform output -raw api_invoke_url 2>/dev/null | head -1) && \
 	FULL_URL="$$API_URL/submit" && \
 	cd ../.. && \
 	perl -pi -e "s|const API_GATEWAY_URL = .*;|const API_GATEWAY_URL = '$$FULL_URL';|" webapp/js/app.js && \
@@ -56,7 +56,7 @@ update-api-url:
 deploy-webapp:
 	@echo "🚀 Deploying webapp to S3..."
 	@cd environments/dev && \
-	BUCKET_NAME=$$(terraform output -raw webapp_bucket_name) && \
+	BUCKET_NAME=$$(terraform output -raw webapp_bucket_name 2>/dev/null | head -1) && \
 	echo "📦 S3 Bucket: $$BUCKET_NAME" && \
 	cd ../.. && \
 	echo "📤 Uploading webapp files to S3..." && \
@@ -65,7 +65,7 @@ deploy-webapp:
 		--exclude "*.log" \
 		--exclude ".git/*" && \
 	cd environments/dev && \
-	WEBAPP_URL=$$(terraform output -raw webapp_url) && \
+	WEBAPP_URL=$$(terraform output -raw webapp_url 2>/dev/null | head -1) && \
 	cd ../.. && \
 	echo "✅ Webapp deployed successfully!" && \
 	echo "🌐 CloudFront URL: $$WEBAPP_URL" && \
