@@ -16,4 +16,8 @@ output "distribution_arn" {
 output "webapp_url" {
   description = "URL of the deployed webapp"
   value       = "https://${aws_cloudfront_distribution.webapp_distribution.domain_name}"
-} 
+}
+
+output "cloudfront_oai_id" {
+  value = aws_cloudfront_origin_access_identity.webapp_oai.id
+}

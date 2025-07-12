@@ -8,6 +8,11 @@
 # Purpose: Provide fast, secure global access to the webapp
 # =============================================================================
 
+# CloudFront Origin Access Identity for S3 access
+resource "aws_cloudfront_origin_access_identity" "webapp_oai" {
+  comment = "OAI for accessing the S3 bucket via CloudFront"
+}
+
 # CloudFront distribution for webapp
 resource "aws_cloudfront_distribution" "webapp_distribution" {
   enabled             = true
@@ -21,7 +26,7 @@ resource "aws_cloudfront_distribution" "webapp_distribution" {
     origin_id   = var.origin_id
 
     s3_origin_config {
-      origin_access_identity = ""
+      origin_access_identity = aws_cloudfront_origin_access_identity.webapp_oai.cloudfront_access_identity_path
     }
   }
 
