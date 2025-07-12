@@ -51,11 +51,13 @@ resource "aws_s3_bucket_policy" "webapp_bucket" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid       = "PublicReadGetObject"
-        Effect    = "Allow"
-        Principal = "*"
-        Action    = "s3:GetObject"
-        Resource  = "${aws_s3_bucket.webapp_bucket.arn}/*"
+        Sid    = "AllowCloudFrontAccess"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity YOUR_OAI_ID"
+        }
+        Action   = "s3:GetObject"
+        Resource = "${aws_s3_bucket.webapp_bucket.arn}/*"
       }
     ]
   })
