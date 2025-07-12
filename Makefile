@@ -25,14 +25,22 @@
 update-api-url:
 	@echo "🔄 Updating API Gateway URL..."
 	@cd environments/dev && \
-	terraform output -raw api_invoke_url > /tmp/api_url.txt 2>&1 && \
-	if [ $$? -ne 0 ]; then \
-		echo "❌ Failed to get terraform output. Please run 'terraform apply' first."; \
+	echo "🔍 Checking terraform state..." && \
+	terraform state list 2>/dev/null | head -5 || echo "❌ No terraform state found" && \
+	echo "🔍 Running terraform output..." && \
+	terraform output -raw api_invoke_url > /tmp/api_url.txt 2>&1; EXIT_CODE=$$? && \
+	echo "🔍 Exit code: $$EXIT_CODE" && \
+	if [ $$EXIT_CODE -ne 0 ]; then \
+		echo "❌ Failed to get terraform output (exit code: $$EXIT_CODE)" && \
+		echo "💡 Please run 'terraform apply' first to create the infrastructure" && \
 		exit 1; \
 	fi && \
+	echo "🔍 Raw output:" && \
+	cat /tmp/api_url.txt && \
 	API_URL=$$(cat /tmp/api_url.txt | grep -v "::debug::" | grep -v "::error::" | grep -v "terraform-bin" | head -1) && \
+	echo "🔍 Extracted API_URL: '$$API_URL'" && \
 	if [ -z "$$API_URL" ]; then \
-		echo "❌ No API URL found in terraform output."; \
+		echo "❌ No API URL found in terraform output." && \
 		exit 1; \
 	fi && \
 	FULL_URL="$$API_URL/submit" && \

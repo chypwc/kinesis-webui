@@ -10,7 +10,7 @@ on:
       deployResource:
         description: "Deploy AWS resources?"
         required: true
-        default: false
+        default: "false"
 jobs:
   deploy-pipeline:
     runs-on: ubuntu-latest
@@ -32,6 +32,13 @@ jobs:
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: ${{ env.TF_VERSION }}
+      
+      - name: Terraform init
+        run: |
+          cd environments/dev
+          terraform init
+          cd ../..
+
       - name: Deploy Kinesis Pipeline
         if: ${{ github.event.inputs.deployResource == 'true' }}
         run: |
