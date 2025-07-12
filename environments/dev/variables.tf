@@ -3,14 +3,20 @@
 # =============================================================================
 
 # Environment
-variable "environment" {
+variable "env" {
   description = "Environment name"
   type        = string
   default     = "dev"
 }
 
+variable "region" {
+  description = "AWS region"
+  type        = string
+  default     = "ap-southeast-2"
+}
+
 # S3 Bucket for Firehose
-variable "s3_bucket_name" {
+variable "firehose_bucket_name" {
   description = "Name of the S3 bucket for Firehose delivery"
   type        = string
   default     = "kinesis-firehose-bucket"
