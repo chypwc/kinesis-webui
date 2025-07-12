@@ -28,14 +28,12 @@ update-api-url:
 	API_URL=$$(terraform output -raw api_invoke_url) && \
 	FULL_URL="$$API_URL/submit" && \
 	cd ../.. && \
-	# Update app.js - single line format
 	if sed -i '' "s|const API_GATEWAY_URL = .*;|const API_GATEWAY_URL = '$$FULL_URL';|" webapp/js/app.js; then \
 		echo "✅ Updated API_GATEWAY_URL in webapp/js/app.js"; \
 	else \
 		echo "❌ Failed to update webapp/js/app.js"; \
 		exit 1; \
 	fi && \
-	# Update server.js - single line format
 	if sed -i '' "s|const API_GATEWAY_URL = .*;|const API_GATEWAY_URL = '$$FULL_URL';|" webapp/server.js; then \
 		echo "✅ Updated API_GATEWAY_URL in webapp/server.js"; \
 	else \
