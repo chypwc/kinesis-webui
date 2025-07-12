@@ -39,7 +39,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     WEBAPP_URL=$(terraform output -raw webapp_url)
 else
     # Assume Linux (Ubuntu) - extract URL and remove debug info
-    WEBAPP_URL=$(terraform output -raw webapp_url | grep -E "^https://" | head -1)
+    WEBAPP_URL=$(terraform output -raw webapp_url | sed 's/::debug::Terraform exited with code 0.//g' | grep -E "^https://" | head -1)
 fi
 
 echo "🌐 Web App URL: $WEBAPP_URL"
