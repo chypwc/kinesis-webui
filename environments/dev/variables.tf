@@ -3,24 +3,17 @@
 # =============================================================================
 
 # Environment
-variable "env" {
+variable "environment" {
   description = "Environment name"
   type        = string
   default     = "dev"
 }
 
-# Region
-variable "region" {
-  description = "AWS region"
-  type        = string
-  default     = "ap-southeast-2"
-}
-
 # S3 Bucket for Firehose
-variable "firehose_bucket_name" {
+variable "s3_bucket_name" {
   description = "Name of the S3 bucket for Firehose delivery"
   type        = string
-  default     = "kinesis-firehose-bucket-chien"
+  default     = "kinesis-firehose-bucket"
 }
 
 # Kinesis Stream
@@ -79,7 +72,6 @@ variable "api_gateway_name" {
 variable "webapp_bucket_name" {
   description = "Name of the S3 bucket for webapp hosting"
   type        = string
-  default     = "kinesis-webapp-bucket"
 }
 
 variable "cloudfront_distribution_name" {

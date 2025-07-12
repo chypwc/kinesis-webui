@@ -51,6 +51,37 @@ update-api-url:
 	echo "✅ Updated API Gateway URL to: $$FULL_URL"
 
 # =============================================================================
+# UPLOAD WEBAPP TO S3
+# =============================================================================
+# This target uploads the webapp files to the S3 bucket.
+#
+# Usage: make upload-webapp
+#
+# What it does:
+# 1. Gets S3 bucket name from Terraform output or terraform.tfvars
+# 2. Syncs webapp files to S3 bucket
+# 3. Shows upload confirmation
+#
+# Prerequisites:
+# - Terraform infrastructure must be deployed
+# - AWS CLI configured
+# - Must be run from project root
+# =============================================================================
+upload-webapp:
+	@echo "📤 Uploading webapp files to S3..."
+	@cd environments/dev && \
+	echo "🔍 Getting bucket name..." && \
+	BUCKET_NAME=$$(grep "webapp_bucket_name" terraform.tfvars | cut -d'=' -f2 | tr -d ' "') && \
+	echo "🔍 Bucket name: $$BUCKET_NAME" && \
+	cd ../.. && \
+	echo "📤 Syncing webapp files to S3..." && \
+	aws s3 sync webapp/ s3://$$BUCKET_NAME \
+		--exclude "node_modules/*" \
+		--exclude "*.log" \
+		--exclude ".git/*" && \
+	echo "✅ Webapp files uploaded successfully to s3://$$BUCKET_NAME"
+
+# =============================================================================
 # DEPLOY WEBAPP TO S3
 # =============================================================================
 # This target deploys the webapp files to the S3 bucket created by Terraform
@@ -59,8 +90,8 @@ update-api-url:
 # Usage: make deploy-webapp
 #
 # What it does:
-# 1. Gets S3 bucket name from Terraform output
-# 2. Syncs webapp files to S3 bucket
+# 1. Uploads webapp files to S3 bucket
+# 2. Gets S3 bucket name from Terraform output
 # 3. Gets CloudFront URL from Terraform output
 # 4. Shows deployment URLs
 #
@@ -70,4 +101,6 @@ update-api-url:
 # - Must be run from project root
 # =============================================================================
 deploy-webapp:
-	./deploy_webapp.sh
+	@echo "🚀 Deploying webapp..."
+	@make upload-webapp
+	@./deploy_webapp.sh
