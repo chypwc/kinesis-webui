@@ -9,6 +9,6 @@ variable "env" {
 }
 
 variable "cloudfront_oai_id" {
-  description = "CloudFront Origin Access Identity ID"
+  description = "CloudFront Origin Access Identity IAM ARN for S3 bucket policy"
   type        = string
 }

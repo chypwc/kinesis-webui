@@ -71,7 +71,7 @@ module "s3_webapp" {
   source = "../../modules/s3-webapp"
 
   webapp_bucket_name = var.webapp_bucket_name
-  cloudfront_oai_id  = module.cloudfront.cloudfront_oai_id
+  cloudfront_oai_id  = module.cloudfront.cloudfront_oai_iam_arn
   env                = var.env
 }
 

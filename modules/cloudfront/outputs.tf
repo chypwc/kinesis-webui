@@ -19,5 +19,11 @@ output "webapp_url" {
 }
 
 output "cloudfront_oai_id" {
-  value = aws_cloudfront_origin_access_identity.webapp_oai.id
+  description = "CloudFront Origin Access Identity ID"
+  value       = aws_cloudfront_origin_access_identity.webapp_oai.id
+}
+
+output "cloudfront_oai_iam_arn" {
+  description = "CloudFront Origin Access Identity IAM ARN for S3 bucket policy"
+  value       = "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${aws_cloudfront_origin_access_identity.webapp_oai.id}"
 }

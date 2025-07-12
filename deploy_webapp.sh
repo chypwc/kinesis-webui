@@ -27,7 +27,9 @@ echo "🔍 Debug: BUCKET_NAME is '$BUCKET_NAME'"
 # Check if the bucket name is valid
 if [ -z "$BUCKET_NAME" ]; then
     echo "❌ No valid bucket name found in terraform output."
-    exit 1
+    echo "🔍 Using bucket name from terraform.tfvars..."
+    BUCKET_NAME=$(grep "webapp_bucket_name" terraform.tfvars | cut -d'=' -f2 | tr -d ' "')
+    echo "🔍 Debug: BUCKET_NAME from tfvars is '$BUCKET_NAME'"
 fi
 
 # Extract the web app URL
@@ -36,8 +38,8 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS
     WEBAPP_URL=$(terraform output -raw webapp_url)
 else
-    # Assume Linux (Ubuntu)
-    WEBAPP_URL=$(terraform output -raw webapp_url | cut -d':' -f1-3)
+    # Assume Linux (Ubuntu) - extract URL and remove debug info
+    WEBAPP_URL=$(terraform output -raw webapp_url | grep -E "^https://" | head -1)
 fi
 
 echo "🌐 Web App URL: $WEBAPP_URL"

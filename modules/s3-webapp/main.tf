@@ -43,7 +43,7 @@ resource "aws_s3_bucket_public_access_block" "webapp_bucket" {
   restrict_public_buckets = false
 }
 
-# Bucket policy to allow public read access
+# Bucket policy to allow CloudFront access
 resource "aws_s3_bucket_policy" "webapp_bucket" {
   bucket = aws_s3_bucket.webapp_bucket.id
 
@@ -54,7 +54,7 @@ resource "aws_s3_bucket_policy" "webapp_bucket" {
         Sid    = "AllowCloudFrontAccess"
         Effect = "Allow"
         Principal = {
-          AWS = "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity YOUR_OAI_ID"
+          AWS = var.cloudfront_oai_id
         }
         Action   = "s3:GetObject"
         Resource = "${aws_s3_bucket.webapp_bucket.arn}/*"
