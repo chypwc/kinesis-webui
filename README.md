@@ -2,6 +2,8 @@
 
 A complete serverless data pipeline that captures shopping cart events via a web application and streams them to AWS S3 through Kinesis Data Streams and Firehose.
 
+![](./images/webapp.png)
+
 ## 📋 Project Overview
 
 This project implements a real-time data streaming pipeline using AWS services:
