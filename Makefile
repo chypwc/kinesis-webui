@@ -70,34 +70,4 @@ update-api-url:
 # - Must be run from project root
 # =============================================================================
 deploy-webapp:
-	@echo "🚀 Deploying webapp to S3..."
-	@cd environments/dev && \
-	terraform output -raw webapp_bucket_name > /tmp/bucket_name.txt 2>&1 && \
-	echo "🔍 Raw bucket output:" && \
-	cat /tmp/bucket_name.txt && \
-	echo "🔍 Exit code for terraform output: $$?" && \
-	BUCKET_NAME=$$(cat /tmp/bucket_name.txt | grep -E "^[a-zA-Z0-9.-]+$" | head -1) && \
-	if [ -z "$$BUCKET_NAME" ]; then \
-		echo "❌ No valid bucket name found in terraform output." && \
-		exit 1; \
-	fi && \
-	echo "📦 S3 Bucket: $$BUCKET_NAME" && \
-	cd ../.. && \
-	if [ -z "$$BUCKET_NAME" ]; then \
-		echo "❌ Bucket name is empty. Cannot deploy to S3." && \
-		exit 1; \
-	fi && \
-	echo "📤 Uploading webapp files to S3..." && \
-	aws s3 sync webapp/ s3://$$BUCKET_NAME \
-		--exclude "node_modules/*" \
-		--exclude "*.log" \
-		--exclude ".git/*" && \
-	cd environments/dev && \
-	terraform output -raw webapp_url > /tmp/webapp_url.txt 2>&1 && \
-	WEBAPP_URL=$$(cat /tmp/webapp_url.txt | grep "https://" | head -1) && \
-	cd ../.. && \
-	echo "✅ Webapp deployed successfully!" && \
-	echo "🌐 CloudFront URL: $$WEBAPP_URL" && \
-	echo "📡 S3 Website URL: http://$$BUCKET_NAME.s3-website-ap-southeast-2.amazonaws.com"
-
- 
+	./deploy_webapp.sh
