@@ -20,7 +20,7 @@ variable "region" {
 variable "firehose_bucket_name" {
   description = "Name of the S3 bucket for Firehose delivery"
   type        = string
-  default     = "kinesis-firehose-bucket"
+  default     = "kinesis-firehose-bucket-chien"
 }
 
 # Kinesis Stream
