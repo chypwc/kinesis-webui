@@ -102,3 +102,27 @@ deploy-webapp:
 	echo "🌐 Web App URL: $$WEBAPP_URL" && \
 	cd ../.. && \
 	echo "✅ Deployment completed successfully."
+
+# ======================================================
+# Trigger Step Function and wait for result
+# ======================================================
+execute-step-function:
+	@echo "🗑️ Deleting existing SageMaker resources..."
+	-aws sagemaker delete-endpoint --endpoint-name xgboost-endpoint || true
+	-aws sagemaker delete-endpoint-config --endpoint-config-name xgboost-endpoint-config || true
+	-aws sagemaker delete-model --model-name xgboost-model || true
+	@echo "🔄 Starting Step Function execution..."
+	@ARN=$$(aws stepfunctions list-state-machines --query "stateMachines[?contains(name, 'SageMakerWorkflow')].stateMachineArn" --output text) && \
+	echo "Found State Machine ARN: $$ARN" && \
+	EXECUTION_ARN=$$(aws stepfunctions start-execution \
+		--state-machine-arn "$$ARN" \
+		--name "execution-$$(date +%s)" \
+		--query 'executionArn' \
+		--output text) && \
+	echo "Started execution: $$EXECUTION_ARN" && \
+	while [ "$$(aws stepfunctions describe-execution --execution-arn "$$EXECUTION_ARN" --query 'status' --output text)" = "RUNNING" ]; do \
+		echo "⏳ Running... $$(date)"; \
+		sleep 30; \
+	done && \
+	echo "✅ Execution completed!" && \
+	aws stepfunctions describe-execution --execution-arn "$$EXECUTION_ARN" --query 'status' --output text

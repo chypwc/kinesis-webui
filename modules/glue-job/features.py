@@ -10,7 +10,7 @@ import sys
 from pyspark.ml.feature import VectorAssembler, StandardScaler
 from pyspark.ml.functions import vector_to_array
 import boto3
-
+import joblib
 
 
 class FeatureEngineering:
@@ -32,6 +32,8 @@ class FeatureEngineering:
     def load_data(self):
         """Load all required tables from Glue Catalog."""
         try:
+                # List available databases and tables for debugging
+
             print("📊 Loading data from Glue Catalog...")
             self.products_df = self._load_table('products')
             print(f"✅ Loaded products: {self.products_df.count()} rows")
@@ -45,11 +47,23 @@ class FeatureEngineering:
             self.departments_df = self._load_table('departments')
             print(f"✅ Loaded departments: {self.departments_df.count()} rows")
             
-            self.order_products_df = self._load_table('order_products')
+            self.order_products__prior_df = self._load_table('order_products__prior')
+            self.order_products__train_df = self._load_table('order_products__train')
+            
+            self.order_products_df = self.order_products__prior_df.unionByName(self.order_products__train_df) \
+                                        .withColumn(
+                                            "reordered_int",
+                                            when(F.lower(col("reordered").cast("string")) == "true", 1)
+                                            .when(F.lower(col("reordered").cast("string")) == "false", 0)
+                                            .otherwise(None)
+                                        ).drop("reordered") \
+                                        .withColumnRenamed("reordered_int", "reordered")
+
+            # self.order_products_df = self._load_table('order_products')
             print(f"✅ Loaded order_products: {self.order_products_df.count()} rows")
             
             # Clean days_since_prior_order
-            self.orders_df = self.orders_df.withColumn(
+            self.orders_df = self.orders_df.withColumnRenamed("days_since_prior", "days_since_prior_order").withColumn(
                 "days_since_prior_order",
                 when(col("days_since_prior_order").isNull(), 0).otherwise(col("days_since_prior_order"))
             )
@@ -63,7 +77,9 @@ class FeatureEngineering:
             self.order_products_prior = self.orders_prior_df.join(self.order_products_df, "order_id") \
                                       .select("user_id", "order_id", "order_number", 
                                               "days_since_prior_order", "product_id", 
-                                              "add_to_cart_order", "reordered")
+                                              "add_to_cart_order", "reordered") \
+                                        
+               
             print(f"✅ Created order_products_prior: {self.order_products_prior.count()} rows")
             
         except Exception as e:
@@ -146,6 +162,32 @@ class FeatureEngineering:
         scaled_col_names = [col + "_scaled" for col in feature_cols]
         return df_scaled.select(*id_cols, *scaled_col_names)
 
+    # In your Glue job (features.py)
+    def save_scaler_parameters(self, scaler_model, output_bucket):
+        """Extract PySpark scaler parameters and save as sklearn-compatible format"""
+        try:
+            import numpy as np
+            from sklearn.preprocessing import StandardScaler
+            
+            # Extract parameters from PySpark scaler
+            mean_values = scaler_model.mean.toArray()
+            std_values = scaler_model.std.toArray()
+            
+            # Create sklearn StandardScaler with same parameters
+            sklearn_scaler = StandardScaler()
+            sklearn_scaler.mean_ = mean_values
+            sklearn_scaler.scale_ = 1.0 / std_values  # sklearn uses scale (1/std)
+            sklearn_scaler.var_ = std_values ** 2
+            sklearn_scaler.n_features_in_ = len(mean_values)
+            sklearn_scaler.feature_names_in_ = None  # Optional
+            
+            # Save sklearn-compatible scaler
+            joblib.dump(sklearn_scaler, "sklearn_scaler.pkl")
+            boto3.client('s3').upload_file("sklearn_scaler.pkl", output_bucket, "scale_models/sklearn_scaler.pkl")
+            print("✅ Saved sklearn-compatible scaler to S3")
+            
+        except Exception as e:
+            print(f"❌ Error saving sklearn scaler: {e}")
         
     def create_product_metadata(self):
         """Create and save product metadata."""
@@ -190,8 +232,8 @@ class FeatureEngineering:
 
             # self._save_parquet(user_features, "user_features")
             # print("✅ Saved user features to S3: user_features")
-            self._save_to_dynamodb(user_features.filter(col("user_id") < 10000), "user_features")
-            print("✅ Saved user features to DynamoDB: user_features")
+            # self._save_to_dynamodb(user_features.filter(col("user_id") < 10000), "user_features")
+            # print("✅ Saved user features to DynamoDB: user_features")
             
             return user_features
 
@@ -240,8 +282,8 @@ class FeatureEngineering:
             )
             # self._save_parquet(prd_features, "prd_features")
             # print("✅ Saved product-level features to S3: prd_features")
-            self._save_to_dynamodb(prd_features, "product_features")
-            print("✅ Saved product-level features to DynamoDB: product_features")
+            # self._save_to_dynamodb(prd_features, "product_features")
+            # print("✅ Saved product-level features to DynamoDB: product_features")
 
             return prd_features
         except Exception as e:
@@ -265,20 +307,29 @@ class FeatureEngineering:
                                         'user_reorder_ratio', 'prod_orders', 'prod_reorders',
                                         'prod_first_orders', 'prod_second_orders')
 
-            # Fit scaler on train
-            # id_cols = ['product_id', 'user_id', 'reordered']
-            # train_df_scaled, scaler_model = self._apply_standard_scaler(train_df, id_cols)
-            
-            # self._save_parquet(train_df_scaled, "train")
+            # self._save_parquet(train_df, "train")
             # print("✅ Saved training dataset to S3: train")
+            
+            id_cols = ['product_id', 'user_id', 'reordered']
+            
+            # Fit scaler on train
+            train_df_scaled, scaler_model = self._apply_standard_scaler(train_df, id_cols)
+            # Save scaler_model in sklearn format to S3 
+            self.save_scaler_parameters(scaler_model, self.output_bucket)
+            
+            # Use label "reordered" and scaled features for training
+            train_df_scaled = train_df_scaled.select('reordered', 'user_orders_scaled', 'user_periods_scaled',
+                                        'user_mean_days_since_prior_scaled', 'user_products_scaled', 'user_distinct_products_scaled',
+                                        'user_reorder_ratio_scaled', 'prod_orders_scaled', 'prod_reorders_scaled',
+                                        'prod_first_orders_scaled', 'prod_second_orders_scaled')
+            
+            self._save_parquet(train_df_scaled, "train_scaled")
+            print("✅ Saved training dataset to S3: train_scaled")
 
-            # Save scaler_model for use elsewhere
-            # self._scaler_model = scaler_model
-            # self._id_cols = id_cols
-
-            self._save_parquet(train_df, "train")
-            print("✅ Saved training dataset to S3: train")
+            self._scaler_model = scaler_model
+            self._id_cols = id_cols
             return train_df
+
         except Exception as e:
             print(f"❌ Error creating training dataset: {e}")
             raise
@@ -298,14 +349,19 @@ class FeatureEngineering:
                                         'user_reorder_ratio', 'prod_orders', 'prod_reorders',
                                         'prod_first_orders', 'prod_second_orders')
             # Use scaler from train
-            # id_cols = ['product_id', 'user_id']
-            # test_df_scaled = self._transform_standard_scaler(test_features_df, id_cols, self._scaler_model)
+            id_cols = ['product_id', 'user_id']
 
-            # self._save_parquet(test_df_scaled, "test")
-            # print("✅ Saved test dataset to S3: test")
+            
+            test_df_scaled = self._transform_standard_scaler(test_features_df, id_cols, self._scaler_model)
+            test_df_scaled = test_df_scaled.select('user_orders_scaled', 'user_periods_scaled',
+                                        'user_mean_days_since_prior_scaled', 'user_products_scaled', 'user_distinct_products_scaled',
+                                        'user_reorder_ratio_scaled', 'prod_orders_scaled', 'prod_reorders_scaled',
+                                        'prod_first_orders_scaled', 'prod_second_orders_scaled')
 
             self._save_parquet(test_features_df, "test")
             print("✅ Saved test dataset to S3: test")
+            self._save_parquet(test_df_scaled, "test_scaled")
+            print("✅ Saved test dataset to S3: test_scaled")
             return test_features_df
         except Exception as e:
             print(f"❌ Error creating test dataset: {e}")
@@ -327,16 +383,19 @@ class FeatureEngineering:
                                             'prod_first_orders', 'prod_second_orders')
 
             # Use the scaler fitted on training data
-            # id_cols = ['user_id', 'product_id']
-            # feature_df_scaled = self._transform_standard_scaler(feature_df, id_cols, self._scaler_model)
-
+            id_cols = ['user_id', 'product_id']
+            feature_df_scaled = self._transform_standard_scaler(feature_df, id_cols, self._scaler_model)
+            feature_df_scaled = feature_df_scaled.select("user_id", "product_id", 'user_orders_scaled', 'user_periods_scaled',
+                                        'user_mean_days_since_prior_scaled', 'user_products_scaled', 'user_distinct_products_scaled',
+                                        'user_reorder_ratio_scaled', 'prod_orders_scaled', 'prod_reorders_scaled',
+                                        'prod_first_orders_scaled', 'prod_second_orders_scaled')
             
             # self._save_parquet(feature_df_scaled, "user_product_features")
-            # print("✅ Saved test dataset to S3: user_product_features")
+            # print("✅ Saved prior features to S3: user_product_features")
 
             # Save to DynamoDB (limit for budget )
-            self._save_to_dynamodb(feature_df.filter(col("user_id") < 10000), "user_product_features")
-            print("✅ Saved user-product feature table to DynamoDB: user_product_features")
+            self._save_to_dynamodb(feature_df_scaled.filter(col("user_id") < 5000), "user_product_features")
+            print("✅ Saved prior user-product feature table to DynamoDB: user_product_features")
 
             return feature_df
         except Exception as e:
@@ -354,14 +413,14 @@ class FeatureEngineering:
             
             print("🏭 Creating features...")
             # Create features
-            self.create_product_metadata()
+            # self.create_product_metadata()
             user_features = self.create_user_features()
             # self.create_user_product_features()
             prd_features = self.create_product_features()
             
             print("📊 Creating datasets...")
             # Create datasets
-            # self.create_training_data(user_features, prd_features)
+            self.create_training_data(user_features, prd_features)
             # self.create_test_data(user_features, prd_features)
 
 

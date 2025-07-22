@@ -90,39 +90,6 @@ kinesis/
 └── README.md                # This file
 ```
 
-## 🚀 Quick Start
-
-### Prerequisites
-
-- AWS CLI configured
-- Terraform installed
-- Node.js (for web application)
-
-### 1. Deploy Infrastructure
-
-```bash
-cd environments/dev
-terraform init
-terraform apply
-```
-
-### 2. Deploy Web Application
-
-```bash
-# Update API Gateway URL
-make update-api-url
-
-# Deploy to S3 + CloudFront
-make deploy-webapp
-```
-
-### 3. Access the Web Application
-
-The web UI URL and API Gateway URL can be found after deploying by GitHub Action workflow.
-
-- **CloudFront URL**: `https://your-cloudfront-domain.cloudfront.net`
-- **S3 Website URL**: `http://your-bucket-name.s3-website-ap-southeast-2.amazonaws.com`
-
 ## 🚀 Deployment Workflow
 
 To deploy the entire system, follow these steps:
@@ -138,7 +105,7 @@ To deploy the entire system, follow these steps:
 2. **Train Model with SageMaker:**
 
    ```bash
-   terraform apply -target=module.sagemaker_sagemaker
+   terraform apply -target=module.sagemaker_notebook
    ```
 
    Run the SageMaker notebook to train the model, which will be saved in S3.
@@ -146,8 +113,16 @@ To deploy the entire system, follow these steps:
 3. **Deploy SageMaker Inference Endpoint:**
    Use the model stored in S3 to deploy a SageMaker inference endpoint.
 
+   ```bash
+   terraform apply -target=module.sagemaker_endpoint
+   ```
+
 4. **Package Lambda Function with Scaler:**
-   Download `scaler.pkl` from S3 and package it with the Lambda function.
+   Download `scaler.pkl` from S3 and package it with the Lambda function (with numpy, pandas, and scikit-learn).
+
+   ```bash
+   ./create_package.sh
+   ```
 
 5. **Deploy Lambda and API Gateway:**
 
@@ -166,6 +141,11 @@ To deploy the entire system, follow these steps:
    make update-api-url
    make deploy-webapp
    ```
+
+The web UI URL and API Gateway URL can be found after deploying by GitHub Action workflow.
+
+- **CloudFront URL**: `https://your-cloudfront-domain.cloudfront.net`
+- **S3 Website URL**: `http://your-bucket-name.s3-website-ap-southeast-2.amazonaws.com`
 
 This workflow ensures that all components are deployed in the correct order and dependencies are managed effectively.
 

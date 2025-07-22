@@ -7,5 +7,10 @@ variable "model_bucket" {
 variable "training_job_name" {
   type        = string
   description = "Name of the model"
-  default     = "sagemaker-xgboost-2025-07-21-15-58-52-772"
+  default     = "xgboost-training-job"
+}
+
+variable "endpoint_config_name" {
+  type        = string
+  description = "Name of the endpoint configuration"
 }

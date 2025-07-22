@@ -1,0 +1,110 @@
+{
+    "Comment": "A state machine to orchestrate Glue job, SageMaker training, and endpoint creation.",
+    "StartAt": "StartGlueJob",
+    "States": {
+        "StartGlueJob": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::glue:startJobRun.sync",
+            "Parameters": {
+                "JobName": "${glue_job_name}"
+            },
+            "Next": "StartSageMakerTrainingJob"
+        },
+        "StartSageMakerTrainingJob": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::sagemaker:createTrainingJob.sync",
+            "Parameters": {
+                "TrainingJobName.$": "$$.Execution.Name",
+                "AlgorithmSpecification": {
+                    "TrainingImage": "783357654285.dkr.ecr.ap-southeast-2.amazonaws.com/sagemaker-xgboost:1.7-1",
+                    "TrainingInputMode": "File"
+                },
+                "RoleArn": "${sagemaker_execution_role_arn}",
+                "InputDataConfig": [
+                    {
+                        "ChannelName": "train",
+                        "DataSource": {
+                            "S3DataSource": {
+                                "S3DataType": "S3Prefix",
+                                "S3Uri": "s3://${input_bucket}/${input_key}",
+                                "S3DataDistributionType": "FullyReplicated"
+                            }
+                        },
+                        "ContentType": "application/x-parquet",
+                        "CompressionType": "None"
+                    }
+                ],
+                "OutputDataConfig": {
+                    "S3OutputPath": "s3://${input_bucket}/xgboost-model/output"
+                },
+                "ResourceConfig": {
+                    "InstanceType": "ml.m5.2xlarge",
+                    "InstanceCount": 1,
+                    "VolumeSizeInGB": 10
+                },
+                "StoppingCondition": {
+                    "MaxRuntimeInSeconds": 3600
+                },
+                "HyperParameters": {
+                    "objective": "binary:logistic",
+                    "max_depth": "7",
+                    "eta": "0.2",
+                    "eval_metric": "logloss,auc",
+                    "num_round": "1000",
+                    "early_stopping_rounds": "20"
+                }
+            },
+            "ResultPath": "$.TrainingJobOutput",
+            "Next": "CreateSageMakerEndpoint"
+        },
+        "CreateSageMakerEndpoint": {
+            "Type": "Parallel",
+            "Branches": [
+                {
+                    "StartAt": "CreateModel",
+                    "States": {
+                        "CreateModel": {
+                            "Type": "Task",
+                            "Resource": "arn:aws:states:::sagemaker:createModel",
+                            "Parameters": {
+                                "ModelName": "${model_name}",
+                                "ExecutionRoleArn": "${sagemaker_execution_role_arn}",
+                                "PrimaryContainer": {
+                                    "Image": "783357654285.dkr.ecr.ap-southeast-2.amazonaws.com/sagemaker-xgboost:1.7-1",
+                                    "ModelDataUrl.$": "$.TrainingJobOutput.ModelArtifacts.S3ModelArtifacts"
+                                }
+                            },
+                            "Next": "CreateEndpointConfig"
+                        },
+                        "CreateEndpointConfig": {
+                            "Type": "Task",
+                            "Resource": "arn:aws:states:::sagemaker:createEndpointConfig",
+                            "Parameters": {
+                                "EndpointConfigName": "${endpoint_config_name}",
+                                "ProductionVariants": [
+                                    {
+                                        "VariantName": "AllTraffic",
+                                        "ModelName": "${model_name}",
+                                        "InitialInstanceCount": 1,
+                                        "InstanceType": "ml.t2.medium"
+                                    }
+                                ]
+                            },
+                            "Next": "CreateEndpoint"
+                        },
+                        "CreateEndpoint": {
+                            "Type": "Task",
+                            "Resource": "arn:aws:states:::sagemaker:createEndpoint",
+                            "Parameters": {
+                                "EndpointName": "${endpoint_name}",
+                                "EndpointConfigName": "${endpoint_config_name}"
+                            },
+                            "End": true
+                        }
+                    }
+                }
+            ],
+            "End": true
+        }
+    }
+}

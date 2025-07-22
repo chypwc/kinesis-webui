@@ -110,7 +110,7 @@ module "glue_job" {
 
   job_name                        = "feature-engineering"
   job_description                 = "Feature engineering job for Instacart data analysis"
-  database_name                   = "imba"
+  database_name                   = "imba_raw"
   script_location                 = "s3://${module.s3.scripts_bucket_name}/features.py"
   scripts_bucket_name             = module.s3.scripts_bucket_name
   glue_script_bucket_arn          = module.s3.scripts_bucket_arn
@@ -128,14 +128,28 @@ module "glue_job" {
 }
 
 module "sagemaker_notebook" {
-  source = "../../modules/sagemaker/notebook"
+  source          = "../../modules/sagemaker/notebook"
   notebook_bucket = module.s3.output_bucket_name
 }
 
 # SageMaker training job
-module "sagemaker_endpoint" {
-  source = "../../modules/sagemaker/endpoint"
-  model_bucket = module.s3.output_bucket_name
+# module "sagemaker_endpoint" {
+#   source = "../../modules/sagemaker/endpoint"
+#   model_bucket = module.s3.output_bucket_name
+#   training_job_name = var.training_job_name
+#   endpoint_config_name = var.endpoint_config_name
+# }
+
+# Step Functions
+module "step_functions" {
+  source               = "../../modules/step-functions"
+  input_bucket         = module.s3.output_bucket_name
+  input_key            = "features/train_scaled/"
+  glue_job_name        = module.glue_job.job_name
+  training_job_name    = var.training_job_name
+  endpoint_name        = var.endpoint_name
+  endpoint_config_name = var.endpoint_config_name
+  env                  = var.env
 }
 
 # Data source for current region

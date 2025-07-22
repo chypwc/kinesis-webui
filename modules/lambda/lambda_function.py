@@ -28,11 +28,6 @@ import numpy as np
 from decimal import Decimal
 import os
 from datetime import datetime
-import joblib
-from io import BytesIO
-import warnings
-from io import StringIO
-warnings.filterwarnings("ignore", message=".*joblib will operate in serial mode.*")
 
 dynamodb = boto3.resource('dynamodb', region_name='ap-southeast-2')
 dynamodb_client = boto3.client('dynamodb', region_name='ap-southeast-2')
@@ -85,69 +80,20 @@ def get_recommendations(data):
     user_product_features = convert_decimals(response['Items'])
     user_product_features = pd.DataFrame(user_product_features)
 
-    if data.get("product_ids"):
-        # Get product features
-        product_ids = df["product_id"].astype(int).unique().tolist()
-        request_keys = [{'product_id': {'N': str(pid)}} for pid in product_ids]
-        items = batch_get_items("product_features", request_keys)
-        flat_items = [flatten_ddb_item(item) for item in items]
-        product_features = pd.DataFrame(flat_items)
-
-        # Get user features
-        user_ids = df["user_id"].astype(int).unique().tolist()
-        request_keys = [{'user_id': {'N': str(uid)}} for uid in user_ids]
-        items = batch_get_items('user_features', request_keys)
-        flat_items = [flatten_ddb_item(item) for item in items]
-        user_features = pd.DataFrame(flat_items)
-
-        # Merge features
-        df['user_id'] = df['user_id'].astype(str)
-        df['product_id'] = df['product_id'].astype(str)
-        user_features['user_id'] = user_features['user_id'].astype(str)
-        product_features['product_id'] = product_features['product_id'].astype(str)
-        user_product_features['user_id'] = user_product_features['user_id'].astype(str)
-        user_product_features['product_id'] = user_product_features['product_id'].astype(str)
-
-        df_merged = df.merge(user_features, on='user_id', how='left', suffixes=('', '_user'))
-        df_merged = df_merged.merge(product_features, on='product_id', how='left', suffixes=('', '_product'))
-
-        features = pd.concat([df_merged, user_product_features], axis=0)
-    else:
-        features = user_product_features
 
     # Prepare test features for prediction
-    X_test = features.drop(columns=["user_id", "product_id"])
+    X_test = user_product_features.drop(columns=["user_id", "product_id"])
     X_test = X_test[['user_orders', 'user_periods', 'user_mean_days_since_prior',
        'user_products', 'user_distinct_products', 'user_reorder_ratio',
        'prod_orders', 'prod_reorders', 'prod_first_orders',
        'prod_second_orders']]
     print("DEBUG: X_test columns before scaling:", X_test.columns)
     
-    try:
-        scaler = joblib.load('scaler.pkl')
-        X_test = scaler.transform(X_test)
-    except Exception as e:
-        print(f"Error loading scaler from S3: {e}")
-        return []
-
-    
-    # Assuming X_test is a NumPy array after scaling
-    # X_test_df = pd.DataFrame(X_test, columns=[
-    # 'user_orders', 'user_periods',
-    # 'user_mean_days_since_prior', 'user_products',
-    # 'user_distinct_products', 'user_reorder_ratio',
-    # 'prod_orders', 'prod_reorders',
-    # 'prod_first_orders', 'prod_second_orders'
-    # ])
-    # print("DEBUG: X_test_df head:", X_test_df.head())
-    # csv_str = X_test_df.to_csv(header=False, index=False)
-
-    # Assuming X_test is your NumPy array
-    output = StringIO()
-    np.savetxt(output, X_test, delimiter=',', fmt='%f')
-    csv_str = output.getvalue()
-    output.close()
-
+    # Convert DataFrame to CSV string for SageMaker endpoint
+    csv_rows = []
+    for _, row in X_test.iterrows():
+        csv_rows.append(','.join(str(x) for x in row.values))
+    csv_str = '\n'.join(csv_rows)
     
     print("DEBUG: CSV string for SageMaker endpoint (first 200 chars):", csv_str[:200])
 
@@ -166,13 +112,13 @@ def get_recommendations(data):
     # Parse predictions
     probs = np.array([float(x) for x in response_body.strip().split('\n') if x])
     df_pred = pd.DataFrame({
-        'product_id': features["product_id"].values,
+        'product_id': user_product_features["product_id"].values,
         'probability': probs
     })
     df_pred_sorted = df_pred.sort_values('probability', ascending=False).head(10)
 
     # Get product metadata
-    product_ids = features["product_id"].astype(int).unique().tolist()
+    product_ids = user_product_features["product_id"].astype(int).unique().tolist()
     request_keys = [{'product_id': {'N': str(pid)}} for pid in product_ids]
     items = batch_get_items("products", request_keys)
     flat_items = [flatten_ddb_item(item) for item in items]

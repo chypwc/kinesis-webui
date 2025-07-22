@@ -2,7 +2,7 @@ resource "aws_s3_object" "train_notebook" {
   bucket = var.notebook_bucket
   key    = "notebooks/train.ipynb"
   source = "../../modules/sagemaker/train.ipynb"
-  etag   = filemd5("../../modules/sagemaker/train.ipynb")
+  etag   = filemd5("${path.module}/train.ipynb")
 }
 
 resource "aws_iam_role" "sagemaker_execution_role" {

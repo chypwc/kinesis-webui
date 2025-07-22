@@ -297,3 +297,4 @@ webapp/package-lock.json
 webapp/.env
 package/
 .venv/
+.wl

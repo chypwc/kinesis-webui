@@ -91,3 +91,21 @@ variable "scripts_bucket_name" {
   type        = string
   default     = "imba-chien-glue-scripts"
 }
+
+variable "training_job_name" {
+  description = "Name of the SageMaker training job"
+  type        = string
+  default     = "xgboost-training-job"
+}
+
+variable "endpoint_name" {
+  description = "Name of the SageMaker endpoint"
+  type        = string
+  default     = "xgboost-endpoint"
+}
+
+variable "endpoint_config_name" {
+  description = "Name of the SageMaker endpoint configuration"
+  type        = string
+  default     = "xgboost-endpoint-config"
+}
