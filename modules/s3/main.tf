@@ -12,11 +12,11 @@
 # Main S3 bucket for storing Firehose-delivered data
 # This bucket will receive streaming data from Kinesis via Firehose
 resource "aws_s3_bucket" "firehose_bucket" {
-  bucket        = var.bucket_name
+  bucket        = var.firehose_bucket_name
   force_destroy = true # Allows Terraform to delete bucket even if not empty
 
   tags = {
-    Name        = var.bucket_name
+    Name        = var.firehose_bucket_name
     Environment = var.env
     Purpose     = "Firehose delivery bucket"
   }
@@ -41,3 +41,62 @@ resource "aws_s3_bucket_versioning" "firehose_bucket" {
     status = "Enabled"
   }
 }
+
+
+# =============================================================================
+# S3 BUCKET FOR GLUE SCRIPTS
+# =============================================================================
+
+resource "aws_s3_bucket" "glue_scripts" {
+  bucket = var.scripts_bucket_name
+
+  tags = {
+    Name        = "glue-scripts-${var.env}"
+    Environment = var.env
+  }
+}
+
+resource "aws_s3_bucket_versioning" "glue_scripts" {
+  bucket = aws_s3_bucket.glue_scripts.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+# resource "aws_s3_bucket_public_access_block" "glue_scripts" {
+#   bucket = aws_s3_bucket.glue_scripts.id
+
+#   block_public_acls       = true
+#   block_public_policy     = true
+#   ignore_public_acls      = true
+#   restrict_public_buckets = true
+# }
+
+# =============================================================================
+# S3 BUCKET FOR OUTPUT DATA
+# =============================================================================
+
+resource "aws_s3_bucket" "output_data" {
+  bucket = var.output_bucket_name
+
+  tags = {
+    Name        = "data-features-${var.env}"
+    Environment = var.env
+  }
+}
+
+resource "aws_s3_bucket_versioning" "output_data" {
+  bucket = aws_s3_bucket.output_data.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+# resource "aws_s3_bucket_public_access_block" "output_data" {
+#   bucket = aws_s3_bucket.output_data.id
+
+#   block_public_acls       = true
+#   block_public_policy     = true
+#   ignore_public_acls      = true
+#   restrict_public_buckets = true
+# }

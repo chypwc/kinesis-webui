@@ -17,3 +17,4 @@ output "firehose_error_log_group_name" {
   description = "The name of the Firehose error log group (created by monitoring module)"
   value       = var.enable_cloudwatch_logging ? "/aws/kinesis-firehose/${var.stream_name}" : null
 }
+

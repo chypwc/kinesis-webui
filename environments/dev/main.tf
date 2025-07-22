@@ -17,8 +17,10 @@
 module "s3" {
   source = "../../modules/s3"
 
-  bucket_name = var.firehose_bucket_name
-  env         = var.env
+  firehose_bucket_name = var.firehose_bucket_name
+  output_bucket_name   = "imba-chien-data-features-${var.env}"
+  scripts_bucket_name  = var.scripts_bucket_name
+  env                  = var.env
 }
 
 # Kinesis Data Stream
@@ -49,6 +51,7 @@ module "lambda" {
   handler             = var.lambda_handler
   runtime             = var.lambda_runtime
   kinesis_stream_name = module.kinesis.stream_name
+  lambda_bucket       = module.s3.output_bucket_name
   env                 = var.env
 }
 
@@ -83,6 +86,56 @@ module "cloudfront" {
   origin_id                      = "S3-${module.s3_webapp.bucket_id}"
   distribution_name              = var.cloudfront_distribution_name
   env                            = var.env
+}
+
+# =============================================================================
+# FEATURE ENGINEERING INFRASTRUCTURE
+# =============================================================================
+
+# DynamoDB tables for feature engineering
+module "dynamodb" {
+  source = "../../modules/dynamodb"
+
+  env = var.env
+
+  tags = {
+    Project     = "kinesis-pipeline"
+    Environment = var.env
+  }
+}
+
+# Glue job for feature engineering
+module "glue_job" {
+  source = "../../modules/glue-job"
+
+  job_name                        = "feature-engineering"
+  job_description                 = "Feature engineering job for Instacart data analysis"
+  database_name                   = "imba"
+  script_location                 = "s3://${module.s3.scripts_bucket_name}/features.py"
+  scripts_bucket_name             = module.s3.scripts_bucket_name
+  glue_script_bucket_arn          = module.s3.scripts_bucket_arn
+  output_bucket_arn               = module.s3.output_bucket_arn
+  output_bucket_name              = module.s3.output_bucket_name
+  data_bucket_arn                 = "arn:aws:s3:::imba-chien"
+  products_table_arn              = module.dynamodb.products_table_arn
+  user_product_features_table_arn = module.dynamodb.user_product_features_table_arn
+  product_features_table_arn      = module.dynamodb.product_features_table_arn
+  user_features_table_arn         = module.dynamodb.user_features_table_arn
+  max_retries                     = 0
+  number_of_workers               = 4
+  env                             = var.env
+
+}
+
+module "sagemaker_notebook" {
+  source = "../../modules/sagemaker/notebook"
+  notebook_bucket = module.s3.output_bucket_name
+}
+
+# SageMaker training job
+module "sagemaker_endpoint" {
+  source = "../../modules/sagemaker/endpoint"
+  model_bucket = module.s3.output_bucket_name
 }
 
 # Data source for current region

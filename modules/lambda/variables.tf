@@ -25,3 +25,28 @@ variable "handler" {
   description = "Lambda handler"
   default     = "lambda_function.lambda_handler"
 }
+
+variable "endpoint_name" {
+  type        = string
+  description = "Name of the SageMaker endpoint"
+  default     = "xgboost-endpoint"
+}
+
+
+variable "lambda_bucket" {
+  type        = string
+  description = "Name of the S3 bucket for Lambda function"
+  default     = "imba-chien-data-features-dev"
+}
+
+variable "scaler_bucket" {
+  type        = string
+  description = "Name of the S3 bucket for scaler.pkl"
+  default     = "imba-chien-data-features-dev"
+}
+
+variable "scaler_key" {
+  type        = string
+  description = "Key of the scaler.pkl in S3"
+  default     = "scale_models/scaler.pkl"
+}

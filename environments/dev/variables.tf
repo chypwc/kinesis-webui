@@ -85,3 +85,9 @@ variable "cloudfront_distribution_name" {
   type        = string
   default     = "kinesis-webapp-distribution"
 }
+
+variable "scripts_bucket_name" {
+  description = "Name of the S3 bucket for Glue scripts"
+  type        = string
+  default     = "imba-chien-glue-scripts"
+}

@@ -9,12 +9,25 @@
 # Data Flow: API Gateway → Lambda → Kinesis Stream
 # =============================================================================
 
+
 # Create deployment package from Python source code
-# This zips the Lambda function code for deployment
-data "archive_file" "lambda_zip" {
-  type        = "zip"
-  source_file = "${path.module}/lambda_function.py"          # Source Python file
-  output_path = "${path.module}/lambda_function_payload.zip" # Output ZIP file
+# resource "null_resource" "build_lambda_package" {
+#   provisioner "local-exec" {
+#     command = <<EOT
+#       mkdir -p ${path.module}/package
+#       pip install joblib boto3 scikit-learn numpy pandas -t ${path.module}/package
+#       cp ${path.module}/lambda_function.py ${path.module}/package/
+#       cd ${path.module}/package && zip -r ../lambda_function_payload.zip .
+#     EOT
+#   }
+# }
+
+resource "aws_s3_object" "lambda_zip" {
+  bucket = var.lambda_bucket
+  key    = "lambda/lambda_function_payload.zip"
+  source = "${path.module}/lambda_function_payload.zip"
+  etag   = filemd5("${path.module}/lambda_function_payload.zip")
+  # depends_on = [null_resource.build_lambda_package]
 }
 
 # IAM role for Lambda function execution
@@ -97,22 +110,98 @@ resource "aws_iam_role_policy" "lambda_logging" {
   })
 }
 
+# IAM policy for SageMaker and DynamoDB access
+resource "aws_iam_policy" "lambda_sagemaker_dynamodb_policy" {
+  name        = "lambda-sagemaker-dynamodb-policy"
+  description = "Allow Lambda to invoke SageMaker endpoints and access DynamoDB tables"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "sagemaker:InvokeEndpoint"
+        ],
+        Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:BatchGetItem",
+          "dynamodb:Query",
+          "dynamodb:Scan",
+          "dynamodb:DescribeTable"
+        ],
+        Resource = [
+          "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/user_product_features",
+          "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/product_features",
+          "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/user_features",
+          "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/products"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_sagemaker_dynamodb_attach" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = aws_iam_policy.lambda_sagemaker_dynamodb_policy.arn
+}
+
+# IAM policy for S3 access to scaler.pkl
+resource "aws_iam_policy" "lambda_s3_getobject_policy" {
+  name        = "lambda-s3-getobject-policy"
+  description = "Allow Lambda to get scaler.pkl from S3 bucket for inference."
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "s3:GetObject"
+        ],
+        Resource = "arn:aws:s3:::${var.lambda_bucket}/*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_s3_getobject_attach" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = aws_iam_policy.lambda_s3_getobject_policy.arn
+}
+
+# Add a data source for the AWS SDK Pandas layer
+
+
 # Lambda function configuration
 # This creates the actual serverless function that processes API requests
 resource "aws_lambda_function" "api_lambda" {
-  filename         = data.archive_file.lambda_zip.output_path # Deployment package
+  s3_bucket     = var.lambda_bucket
+  s3_key        = "lambda/lambda_function_payload.zip"
   function_name    = var.function_name
   role             = aws_iam_role.lambda_role.arn                     # IAM role for permissions
   handler          = var.handler                                      # Function entry point
   runtime          = var.runtime                                      # Python runtime
-  source_code_hash = data.archive_file.lambda_zip.output_base64sha256 # For updates
-  timeout          = 30                                               # Function timeout in seconds
+  source_code_hash = filebase64sha256("${path.module}/lambda_function_payload.zip") # For updates
+  timeout          = 120                                               # Function timeout in seconds
+  architectures    = ["arm64"]  # x86_64 on GitHub Actions
+
+  # layers = [
+  #   "arn:aws:lambda:${data.aws_region.current.name}:336392948345:layer:AWSSDKPandas-Python312:18"
+  # ]
 
   # Environment variables passed to the Lambda function
   # These are accessible within the function code
   environment {
     variables = {
       KINESIS_STREAM = var.kinesis_stream_name # Stream name for data delivery
+      ENDPOINT_NAME = var.endpoint_name
+      SCALER_BUCKET = var.scaler_bucket
+      SCALER_KEY = var.scaler_key
     }
   }
 
@@ -121,6 +210,8 @@ resource "aws_lambda_function" "api_lambda" {
     Environment = var.env
     Purpose     = "API Gateway integration"
   }
+
+  depends_on = [aws_s3_object.lambda_zip]
 }
 
 # Lambda permission for API Gateway invocation

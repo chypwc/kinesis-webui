@@ -283,7 +283,17 @@ $RECYCLE.BIN/
 ehthumbs.db
 Thumbs.db
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# AWS
+.aws/
+
 # Project specific
 webapp/node_modules/
 webapp/package-lock.json
-webapp/.env 
+webapp/.env
+package/
+.venv/

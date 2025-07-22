@@ -319,3 +319,18 @@ body {
         justify-content: center;
     }
 }
+
+.recommendations-block {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 15px;
+    background: #f7fafc;
+    margin-bottom: 20px;
+}
+
+.recommendations-block ol {
+    padding-left: 24px; /* ensures numbers are visible and indented */
+    margin: 0;
+}

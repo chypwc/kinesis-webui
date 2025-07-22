@@ -83,3 +83,43 @@ output "webapp_url" {
   description = "URL of the deployed webapp"
   value       = module.cloudfront.webapp_url
 }
+
+# =============================================================================
+# FEATURE ENGINEERING OUTPUTS
+# =============================================================================
+
+output "glue_job_name" {
+  description = "Name of the Glue job"
+  value       = module.glue_job.job_name
+}
+
+output "glue_job_arn" {
+  description = "ARN of the Glue job"
+  value       = module.glue_job.job_arn
+}
+
+
+
+# =============================================================================
+# DYNAMODB OUTPUTS
+# =============================================================================
+
+output "products_table_name" {
+  description = "Name of the products DynamoDB table"
+  value       = module.dynamodb.products_table_name
+}
+
+output "products_table_arn" {
+  description = "ARN of the products DynamoDB table"
+  value       = module.dynamodb.products_table_arn
+}
+
+output "user_product_features_table_name" {
+  description = "Name of the user_product_features DynamoDB table"
+  value       = module.dynamodb.user_product_features_table_name
+}
+
+output "user_product_features_table_arn" {
+  description = "ARN of the user_product_features DynamoDB table"
+  value       = module.dynamodb.user_product_features_table_arn
+}

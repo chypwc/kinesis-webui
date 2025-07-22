@@ -23,7 +23,8 @@
 // =============================================================================
 // API Gateway endpoint URL - update this with your actual endpoint
 // This URL is automatically updated by the Makefile when running 'make update-api-url'
-const API_GATEWAY_URL = 'https://yji37jqs52.execute-api.ap-southeast-2.amazonaws.com/$default/submit'
+const API_GATEWAY_URL =
+  "https://3cafiypchb.execute-api.ap-southeast-2.amazonaws.com/$default/submit";
 
 // =============================================================================
 // DOM ELEMENT REFERENCES
@@ -159,11 +160,17 @@ async function handleFormSubmit(event) {
 
     // Handle response based on success/failure
     if (response.success) {
+      // console.log("Response:", response);
+      // console.log("Recommendations:", response.data.recommendations);
+      // console.log("Recommendations data:", response.data);
       updateStatus(
         "Data sent successfully! Check the response log for details.",
         "success"
       );
       addResponseLog("SUCCESS", response.data, "success");
+      if (response.data.recommendations) {
+        renderRecommendations(response.data.recommendations);
+      }
     } else {
       updateStatus(
         "Failed to send data. Check the response log for details.",
@@ -338,6 +345,28 @@ function addSampleData() {
   document.getElementById("userId").value = "12345";
   document.getElementById("productIds").value = "PROD001, PROD002, PROD003";
   document.getElementById("eventType").value = "add_to_cart";
+}
+
+function renderRecommendations(recommendations) {
+  console.log("Rendering recommendations:", recommendations);
+  const container = document.getElementById("recommendations");
+  if (!recommendations || recommendations.length === 0) {
+    container.innerHTML = "<p>No recommendations available.</p>";
+    return;
+  }
+  // Sort by probability descending (just in case)
+  recommendations.sort((a, b) => b.probability - a.probability);
+  let html = "<h2>Top 10 Product Recommendations</h2>";
+  html += "<ol>";
+  recommendations.forEach((rec, idx) => {
+    html += `<li><strong>${rec.product_name}</strong> <br/>
+      <span>Department: ${rec.department}</span> <br/>
+      <span>Aisle: ${rec.aisle}</span> <br/>
+      <span>Score: ${rec.probability.toFixed(3)}</span>
+    </li>`;
+  });
+  html += "</ol>";
+  container.innerHTML = html;
 }
 
 // =============================================================================
