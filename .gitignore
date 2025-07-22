@@ -297,4 +297,8 @@ webapp/package-lock.json
 webapp/.env
 package/
 .venv/
-.wl
+.whl
+
+# Python wheels
+modules/glue-job/wheels/
+*.whl
