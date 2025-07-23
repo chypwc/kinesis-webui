@@ -29,6 +29,7 @@ jobs:
     env:
       TF_VERSION: 1.6.0
       TF_VAR_lambda_architecture: "x86_64"
+      TF_VAR_sklearn_wheel_filename: "scikit_learn-1.7.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl"
     steps:
       - name: Configure AWS credentials
         id: creds
@@ -96,11 +97,13 @@ jobs:
         if: ${{ github.event.inputs.deployMlPipeline == 'true' }}
         working-directory: environments/dev
         run: |
-          terraform plan -target=module.glue_job -target=module.dynamodb -target=module.step_functions
+          terraform plan -var="sklearn_wheel_filename=${{ env.TF_VAR_sklearn_wheel_filename }}" \
+          -target=module.glue_job -target=module.dynamodb -target=module.step_functions
           terraform apply -auto-approve
 
       - name: Execute Step Functions
         if: ${{ github.event.inputs.deployMlPipeline == 'true' }}
+        timeout-minutes: 30
         run: |
           make execute-step-function
 
