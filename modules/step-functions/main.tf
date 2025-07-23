@@ -79,7 +79,7 @@ resource "aws_sfn_state_machine" "sagemaker_workflow" {
     model_name                              = "xgboost-model",
     endpoint_config_name                    = var.endpoint_config_name,
     sagemaker_execution_role_arn            = aws_iam_role.sagemaker_execution_role.arn,
-    private_subnet_ids                      = var.private_subnet_ids,
+    private_subnet_ids                      = jsonencode(var.private_subnet_ids),
     glue_sagemaker_lambda_security_group_id = var.glue_sagemaker_lambda_security_group_id
   })
 

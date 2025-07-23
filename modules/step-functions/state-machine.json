@@ -57,7 +57,8 @@
           "SecurityGroupIds": [
             "${glue_sagemaker_lambda_security_group_id}"
           ],
-          "Subnets": "${private_subnet_ids}"
+          "Subnets": ${private_subnet_ids
+          }
         }
       },
       "ResultPath": "$.TrainingJobOutput",
@@ -99,7 +100,7 @@
                   "SecurityGroupIds": [
                     "${glue_sagemaker_lambda_security_group_id}"
                   ],
-                  "Subnets": ${jsonencode(private_subnet_ids)
+                  "Subnets": ${private_subnet_ids
                   }
                 }
               },
