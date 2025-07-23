@@ -105,7 +105,7 @@ jobs:
 
       - name: Execute Step Functions
         if: ${{ github.event.inputs.deployMlPipeline == 'true' }}
-        timeout-minutes: 30
+        timeout-minutes: 45
         run: |
           make execute-step-function
 
