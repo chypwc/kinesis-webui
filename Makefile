@@ -112,7 +112,7 @@ execute-step-function:
 	-aws sagemaker delete-endpoint-config --endpoint-config-name xgboost-endpoint-config || true
 	-aws sagemaker delete-model --model-name xgboost-model || true
 	@echo "🔄 Starting Step Function execution..."
-	@ARN=$$(aws stepfunctions list-state-machines --query "stateMachines[?contains(name, 'SageMakerWorkflow')].stateMachineArn" --output text) && \
+	@ARN=$$(aws stepfunctions list-state-machines --query "stateMachines[?contains(name, 'sagemaker-workflow')].stateMachineArn" --output text) && \
 	echo "Found State Machine ARN: $$ARN" && \
 	EXECUTION_ARN=$$(aws stepfunctions start-execution \
 		--state-machine-arn "$$ARN" \
@@ -125,4 +125,10 @@ execute-step-function:
 		sleep 30; \
 	done && \
 	echo "✅ Execution completed!" && \
-	aws stepfunctions describe-execution --execution-arn "$$EXECUTION_ARN" --query 'status' --output text
+	STATUS=$$(aws stepfunctions describe-execution --execution-arn "$$EXECUTION_ARN" --query 'status' --output text) && \
+	echo "✅ Execution completed with status: $$STATUS" && \
+	if [ "$$STATUS" != "SUCCEEDED" ]; then \
+		echo "❌ Execution failed. Getting error details..."; \
+		aws stepfunctions describe-execution --execution-arn "$$EXECUTION_ARN"; \
+		exit 1; \
+	fi
