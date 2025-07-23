@@ -123,3 +123,22 @@ output "user_product_features_table_arn" {
   description = "ARN of the user_product_features DynamoDB table"
   value       = module.dynamodb.user_product_features_table_arn
 }
+
+# =============================================================================
+# STEP FUNCTIONS OUTPUTS
+# =============================================================================
+
+output "step_functions_state_machine_arn" {
+  description = "ARN of the Step Functions state machine"
+  value       = module.step_functions.state_machine_arn
+}
+
+output "step_functions_state_machine_name" {
+  description = "Name of the Step Functions state machine"
+  value       = module.step_functions.state_machine_name
+}
+
+output "step_functions_execution_role_arn" {
+  description = "ARN of the Step Functions execution role"
+  value       = module.step_functions.execution_role_arn
+}

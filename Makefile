@@ -112,7 +112,9 @@ execute-step-function:
 	-aws sagemaker delete-endpoint-config --endpoint-config-name xgboost-endpoint-config || true
 	-aws sagemaker delete-model --model-name xgboost-model || true
 	@echo "🔄 Starting Step Function execution..."
-	@ARN=$$(aws stepfunctions list-state-machines --query "stateMachines[?contains(name, 'sagemaker-workflow')].stateMachineArn" --output text) && \
+	@cd environments/dev && \
+	ARN=$$(terraform output -raw step_functions_state_machine_arn) && \
+	cd ../.. && \
 	echo "Found State Machine ARN: $$ARN" && \
 	EXECUTION_ARN=$$(aws stepfunctions start-execution \
 		--state-machine-arn "$$ARN" \
@@ -124,7 +126,6 @@ execute-step-function:
 		echo "⏳ Running... $$(date)"; \
 		sleep 30; \
 	done && \
-	echo "✅ Execution completed!" && \
 	STATUS=$$(aws stepfunctions describe-execution --execution-arn "$$EXECUTION_ARN" --query 'status' --output text) && \
 	echo "✅ Execution completed with status: $$STATUS" && \
 	if [ "$$STATUS" != "SUCCEEDED" ]; then \
