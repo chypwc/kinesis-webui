@@ -50,14 +50,11 @@ jobs:
         run: |
           ./create_package.sh
 
-      - name: Glue packages
+      - name: Glue package wheels
         working-directory: modules/glue-job
         run: |
-          ./create_package.sh
+          ./create_wheel.sh
 
-      - name: Step Functions packages
-        working-directory: modules/step-functions
-        run: |
       - name: Terraform init
         working-directory: environments/dev
         run: |
