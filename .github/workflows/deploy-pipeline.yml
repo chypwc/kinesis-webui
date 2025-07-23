@@ -48,18 +48,23 @@ jobs:
       - name: Lambda Packages
         working-directory: modules/lambda
         run: |
+          chmod +x create_package.sh
           ./create_package.sh
 
       - name: Glue package wheels
         working-directory: modules/glue-job
         run: |
-          # First, create the wheels
+          # Debug: Check if script exists
+          ls -la create_wheel.sh
+
+          # Make executable and run
+          chmod +x create_wheel.sh
           ./create_wheel.sh
 
-          # Then set the environment variable with just the filename
+          # Set environment variable
           SKLEARN_WHEEL=$(ls wheels/scikit_learn-*.whl | head -1 | xargs basename)
           echo "SKLEARN_WHEEL=$SKLEARN_WHEEL" >> $GITHUB_ENV
-          echo "Generated wheel: $SKLEARN_WHEEL"
+          echo "Selected wheel: $SKLEARN_WHEEL"
 
       - name: Terraform init
         working-directory: environments/dev
