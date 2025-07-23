@@ -45,6 +45,19 @@ jobs:
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
+      - name: Lambda Packages
+        working-directory: modules/lambda
+        run: |
+          ./create_package.sh
+
+      - name: Glue packages
+        working-directory: modules/glue-job
+        run: |
+          ./create_package.sh
+
+      - name: Step Functions packages
+        working-directory: modules/step-functions
+        run: |
       - name: Terraform init
         working-directory: environments/dev
         run: |
@@ -76,11 +89,6 @@ jobs:
         run: |
           make execute-step-function
 
-      - name: Lambda Package
-        if: ${{ github.event.inputs.deployRealTimePipeline == 'true' }}
-        working-directory: modules/lambda
-        run: |
-          ./create_package.sh
       - name: Deploy Lambda and API Gateway
         if: ${{ github.event.inputs.deployRealTimePipeline == 'true' }}
         working-directory: environments/dev
