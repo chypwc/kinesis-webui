@@ -77,20 +77,8 @@ def get_recommendations(data):
         if "user_id" not in data:
             raise ValueError("Missing 'user_id' in request data")
         
-        if "product_ids" not in data or not data["product_ids"]:
-            print("⚠️ No product_ids provided, returning empty recommendations")
-            return []
-        
         user_id = data["user_id"]
-        product_ids = data["product_ids"]
-        print(f"👤 Processing user_id: {user_id}, product_ids: {product_ids}")
-        
-        # Build user-product DataFrame
-        df = pd.DataFrame({
-            "user_id": [user_id] * len(product_ids),
-            "product_id": product_ids
-        })
-        print(f"📊 Created DataFrame with shape: {df.shape}")
+        print(f"🔍 Processing recommendations for user_id: {user_id}")
         
         # Query DynamoDB for user features
         print("🔍 Querying DynamoDB for user features...")
@@ -104,71 +92,114 @@ def get_recommendations(data):
             print(f"⚠️ No features found for user_id {user_id}")
             return []
         
+        # Convert and validate data
         user_product_features = convert_decimals(response['Items'])
         user_product_features = pd.DataFrame(user_product_features)
-        print(f"📊 Features DataFrame shape: {user_product_features.shape}, columns: {list(user_product_features.columns)}")
-    
-    except Exception as e:
-        print(f"❌ Error in get_recommendations setup: {str(e)}")
-        raise
+        print(f"📊 Features DataFrame shape: {user_product_features.shape}")
+        print(f"📊 Available columns: {list(user_product_features.columns)}")
+        
+        # Validate required columns exist
+        required_columns = ['user_id', 'product_id', 'user_orders_scaled', 'user_periods_scaled', 
+                           'user_mean_days_since_prior_scaled', 'user_products_scaled', 
+                           'user_distinct_products_scaled', 'user_reorder_ratio_scaled', 
+                           'prod_orders_scaled', 'prod_reorders_scaled', 'prod_first_orders_scaled', 
+                           'prod_second_orders_scaled']
+        
+        missing_columns = [col for col in required_columns if col not in user_product_features.columns]
+        if missing_columns:
+            raise ValueError(f"Missing required columns: {missing_columns}")
+        
+        # Prepare test features for prediction
+        feature_columns = ['user_orders_scaled', 'user_periods_scaled', 'user_mean_days_since_prior_scaled', 
+                          'user_products_scaled', 'user_distinct_products_scaled', 'user_reorder_ratio_scaled', 
+                          'prod_orders_scaled', 'prod_reorders_scaled', 'prod_first_orders_scaled', 'prod_second_orders_scaled']
+        
+        X_test = user_product_features[feature_columns]
+        print(f"🔢 Prepared {X_test.shape[0]} samples with {X_test.shape[1]} features")
+        
+        # Convert DataFrame to CSV string for SageMaker endpoint
+        csv_rows = []
+        for _, row in X_test.iterrows():
+            csv_rows.append(','.join(str(x) for x in row.values))
+        csv_str = '\n'.join(csv_rows)
+        
+        print(f"📤 Sending {len(csv_rows)} rows to SageMaker endpoint")
+        # print(f"📤 Sample CSV (first 200 chars): {csv_str[:200]}...")
 
-
-    # Prepare test features for prediction
-    X_test = user_product_features.drop(columns=["user_id", "product_id"])
-    X_test = X_test[['user_orders_scaled', 'user_periods_scaled', 'user_mean_days_since_prior_scaled', 
-                    'user_products_scaled', 'user_distinct_products_scaled', 'user_reorder_ratio_scaled', 
-                    'prod_orders_scaled', 'prod_reorders_scaled', 'prod_first_orders_scaled', 'prod_second_orders_scaled']]
-    print("DEBUG: X_test columns before scaling:", X_test.columns)
-    
-    # Convert DataFrame to CSV string for SageMaker endpoint
-    csv_rows = []
-    for _, row in X_test.iterrows():
-        csv_rows.append(','.join(str(x) for x in row.values))
-    csv_str = '\n'.join(csv_rows)
-    
-    print("DEBUG: CSV string for SageMaker endpoint (first 200 chars):", csv_str[:200])
-
-    try:
         # Predict using boto3 SageMaker runtime
+        print(f"🤖 Invoking SageMaker endpoint: {ENDPOINT_NAME}")
         response = runtime.invoke_endpoint(
             EndpointName=ENDPOINT_NAME,
             ContentType='text/csv',
             Body=csv_str
         )
         response_body = response['Body'].read().decode('utf-8')
+        print(f"📥 SageMaker response length: {len(response_body)} chars")
+        
+        # Validate and parse predictions
+        response_lines = [x.strip() for x in response_body.strip().split('\n') if x.strip()]
+        if len(response_lines) != len(csv_rows):
+            raise ValueError(f"SageMaker returned {len(response_lines)} predictions but expected {len(csv_rows)}")
+        
+        try:
+            probs = np.array([float(x) for x in response_lines])
+        except ValueError as e:
+            raise ValueError(f"Failed to parse SageMaker predictions as floats: {e}")
+        
+        # Create prediction DataFrame
+        if len(probs) != len(user_product_features):
+            raise ValueError(f"Prediction count ({len(probs)}) doesn't match feature count ({len(user_product_features)})")
+            
+        df_pred = pd.DataFrame({
+            'product_id': user_product_features["product_id"].values,
+            'probability': probs
+        })
+        df_pred_sorted = df_pred.sort_values('probability', ascending=False).head(10)
+        print(f"🎯 Top prediction probability: {df_pred_sorted.iloc[0]['probability']:.4f}")
+
+        # Get product metadata
+        product_ids = df_pred_sorted["product_id"].astype(int).unique().tolist()
+        print(f"🛍️ Fetching metadata for {len(product_ids)} products")
+        
+        request_keys = [{'product_id': {'N': str(pid)}} for pid in product_ids]
+        items = batch_get_items("products", request_keys)
+        
+        if not items:
+            print("⚠️ No product metadata found, returning predictions without names")
+            return df_pred_sorted[['product_id', 'probability']].to_dict(orient='records')
+        
+        flat_items = [flatten_ddb_item(item) for item in items]
+        products_df = pd.DataFrame(flat_items)
+        print(f"📊 Retrieved metadata for {len(products_df)} products")
+
+        # Ensure consistent data types for merging
+        df_pred_sorted['product_id'] = df_pred_sorted['product_id'].astype(str)
+        products_df['product_id'] = products_df['product_id'].astype(str)
+
+        # Merge predictions with product metadata
+        df_recommend = pd.merge(
+            df_pred_sorted,
+            products_df[['product_id', 'product_name', 'department', 'aisle']],
+            on='product_id',
+            how='left'
+        )
+
+        # Fill missing product names
+        df_recommend['product_name'] = df_recommend['product_name'].fillna('Unknown Product')
+        df_recommend['department'] = df_recommend['department'].fillna('Unknown')
+        df_recommend['aisle'] = df_recommend['aisle'].fillna('Unknown')
+
+        final_recommendations = df_recommend[['product_id', 'probability', 'product_name', 'department', 'aisle']].to_dict(orient='records')
+        print(f"✅ Returning {len(final_recommendations)} recommendations")
+        
+        return final_recommendations
+
     except Exception as e:
-        print(f"Error invoking SageMaker endpoint: {e}")
+        print(f"❌ Error in get_recommendations: {str(e)}")
+        print(f"❌ Error type: {type(e).__name__}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
         return []
-
-    # Parse predictions
-    probs = np.array([float(x) for x in response_body.strip().split('\n') if x])
-    df_pred = pd.DataFrame({
-        'product_id': user_product_features["product_id"].values,
-        'probability': probs
-    })
-    df_pred_sorted = df_pred.sort_values('probability', ascending=False).head(10)
-
-    # Get product metadata
-    product_ids = user_product_features["product_id"].astype(int).unique().tolist()
-    request_keys = [{'product_id': {'N': str(pid)}} for pid in product_ids]
-    items = batch_get_items("products", request_keys)
-    flat_items = [flatten_ddb_item(item) for item in items]
-    products_df = pd.DataFrame(flat_items)
-
-    df_pred_sorted['product_id'] = df_pred_sorted['product_id'].astype(str)
-    products_df['product_id'] = products_df['product_id'].astype(str)
-
-    df_recommend = pd.merge(
-        df_pred_sorted,
-        products_df[['product_id', 'product_name', 'department', 'aisle']],
-        on='product_id',
-        how='left'
-    )
-
-    df_recommend = df_recommend[['product_id', 'probability', 'product_name', 'department', 'aisle']]
-
-    # Return as a list of dicts
-    return df_recommend.to_dict(orient='records')
 
 
 
@@ -212,23 +243,7 @@ def lambda_handler(event, context):
             body = event
             
         print(f"📊 Parsed body: {json.dumps(body)}")
-
-        # DATA ENRICHMENT
-        record_data = {
-            **body,
-            'timestamp': datetime.utcnow().isoformat(),
-            'source': 'api-gateway'
-        }
-        record_json = json.dumps(record_data)
-
-        # KINESIS CLIENT INITIALIZATION
-        kinesis_client = boto3.client('kinesis')
-        response = kinesis_client.put_record(
-            StreamName=stream_name,
-            Data=record_json,
-            PartitionKey=str(hash(record_json) % 1000)
-        )
-
+       
         # Get recommendations (will return [] if product_ids is missing or empty)
         print("🤖 Starting recommendation generation...")
         try:
@@ -238,10 +253,10 @@ def lambda_handler(event, context):
             print(f"❌ Error in get_recommendations: {rec_error}")
             print(f"📚 Traceback: {str(rec_error.__class__.__name__)}: {str(rec_error)}")
             recommendations = []  # Return empty recommendations on error
-
-        # SUCCESS RESPONSE
+        
+        # SUCCESS RESPONSE - Return immediately with recommendations
         print("✅ Sending success response")
-        return {
+        api_response = {
             'statusCode': 200,
             'headers': {
                 'Content-Type': 'application/json',
@@ -250,12 +265,35 @@ def lambda_handler(event, context):
                 'Access-Control-Allow-Headers': 'Content-Type',
             },
             'body': json.dumps({
-                'message': 'Data sent to Kinesis successfully',
-                'record_id': response['SequenceNumber'],
-                'shard_id': response['ShardId'],
+                'message': 'Recommendations generated successfully',
                 'recommendations': recommendations
             })
         }
+        
+        # KINESIS PROCESSING - Send to Kinesis (synchronous)
+        try:
+            print("📤 Sending data to Kinesis...")
+            record_data = {
+                **body,
+                'timestamp': datetime.utcnow().isoformat(),
+                'source': 'api-gateway',
+                "recommendations": recommendations
+            }
+            record_json = json.dumps(record_data)   
+            
+            kinesis_client = boto3.client('kinesis')
+            kinesis_response = kinesis_client.put_record(
+                StreamName=stream_name,
+                Data=record_json,
+                PartitionKey=str(hash(record_json) % 1000)
+            )
+            print(f"✅ Data sent to Kinesis successfully. Record ID: {kinesis_response['SequenceNumber']}")
+            
+        except Exception as kinesis_error:
+            print(f"❌ Failed to send data to Kinesis: {str(kinesis_error)}")
+            # Continue with API response even if Kinesis fails
+            
+        return api_response
 
     except Exception as e:
         print(f"❌ Lambda function error: {str(e)}")
