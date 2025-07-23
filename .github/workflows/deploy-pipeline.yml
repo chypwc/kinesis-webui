@@ -53,8 +53,13 @@ jobs:
       - name: Glue package wheels
         working-directory: modules/glue-job
         run: |
-          echo "SKLEARN_WHEEL=$(ls wheels/scikit_learn-*.whl | head -1)" >> $GITHUB_ENV
-          echo $SKLEARN_WHEEL
+          # First, create the wheels
+          ./create_wheel.sh
+
+          # Then set the environment variable with just the filename
+          SKLEARN_WHEEL=$(ls wheels/scikit_learn-*.whl | head -1 | xargs basename)
+          echo "SKLEARN_WHEEL=$SKLEARN_WHEEL" >> $GITHUB_ENV
+          echo "Generated wheel: $SKLEARN_WHEEL"
 
       - name: Terraform init
         working-directory: environments/dev
