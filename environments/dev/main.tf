@@ -138,6 +138,7 @@ module "glue_job" {
   number_of_workers                       = 4
   private_subnet_ids                      = module.vpc.private_subnet_ids
   glue_sagemaker_lambda_security_group_id = module.vpc.glue_sagemaker_lambda_security_group_id
+  sklearn_wheel_filename                  = var.sklearn_wheel_filename
   env                                     = var.env
 
 }

@@ -117,3 +117,8 @@ variable "glue_sagemaker_lambda_security_group_id" {
   description = "The ID of the glue_sagemaker_lambda security group"
   type        = string
 }
+
+variable "sklearn_wheel_filename" {
+  description = "The filename of the scikit-learn wheel"
+  type        = string
+}

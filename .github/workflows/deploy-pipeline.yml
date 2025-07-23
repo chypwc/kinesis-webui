@@ -54,6 +54,7 @@ jobs:
         working-directory: modules/glue-job
         run: |
           ./create_wheel.sh
+          echo "SKLEARN_WHEEL=$(ls wheels/scikit_learn-*.whl | head -1)" >> $GITHUB_ENV
 
       - name: Terraform init
         working-directory: environments/dev
