@@ -113,11 +113,9 @@ variable "endpoint_config_name" {
 variable "lambda_architecture" {
   description = "Lambda architecture"
   type        = string
-  default     = "arm64"
 }
 
 variable "sklearn_wheel_filename" {
   description = "The filename of the scikit-learn wheel"
   type        = string
-  default     = null
 }

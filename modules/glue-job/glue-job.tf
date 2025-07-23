@@ -163,7 +163,6 @@ resource "aws_s3_object" "joblib_wheel" {
 }
 
 resource "aws_s3_object" "sklearn_wheel" {
-  count  = var.sklearn_wheel_filename != null ? 1 : 0
   bucket = var.scripts_bucket_name
   key    = "wheels/${var.sklearn_wheel_filename}"
   source = "${path.module}/wheels/${var.sklearn_wheel_filename}"

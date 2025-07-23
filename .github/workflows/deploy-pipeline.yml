@@ -81,6 +81,8 @@ jobs:
       - name: Deploy VPC
         if: ${{ github.event.inputs.deployVPC == 'true' }}
         working-directory: environments/dev
+        env:
+          TF_VAR_sklearn_wheel_filename: ${{ env.SKLEARN_WHEEL }}
         run: |
           terraform plan -target=module.vpc
           terraform apply -auto-approve
@@ -101,8 +103,10 @@ jobs:
       - name: Deploy Lambda and API Gateway
         if: ${{ github.event.inputs.deployRealTimePipeline == 'true' }}
         working-directory: environments/dev
+        env:
+          TF_VAR_lambda_architecture: "x86_64"
         run: |
-          terraform plan -var="lambda_architecture=x86_64" -target=module.lambda -target=module.api_gateway
+          terraform plan -target=module.lambda -target=module.api_gateway
           terraform apply -auto-approve
 
       - name: Deploy Kinesis Pipeline
