@@ -99,7 +99,8 @@
                   "SecurityGroupIds": [
                     "${glue_sagemaker_lambda_security_group_id}"
                   ],
-                  "Subnets": "${private_subnet_ids}"
+                  "Subnets": ${jsonencode(private_subnet_ids)
+                  }
                 }
               },
               "Next": "CreateEndpoint"

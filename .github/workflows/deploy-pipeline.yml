@@ -96,6 +96,7 @@ jobs:
       - name: Deploy Glue Job, DynamoDB, Sagemaker Endpoint, Step Functions
         if: ${{ github.event.inputs.deployMlPipeline == 'true' }}
         working-directory: environments/dev
+        timeout-minutes: 15
         run: |
           terraform plan -var="sklearn_wheel_filename=${{ env.TF_VAR_sklearn_wheel_filename }}" \
           -target=module.glue_job -target=module.dynamodb -target=module.step_functions
@@ -111,6 +112,7 @@ jobs:
       - name: Deploy Lambda and API Gateway
         if: ${{ github.event.inputs.deployRealTimePipeline == 'true' }}
         working-directory: environments/dev
+        timeout-minutes: 15
         run: |
           terraform plan -var="lambda_architecture=${{ env.TF_VAR_lambda_architecture }}" \
            -target=module.lambda -target=module.api_gateway
@@ -120,6 +122,7 @@ jobs:
       - name: Deploy Kinesis Pipeline
         if: ${{ github.event.inputs.deployRealTimePipeline == 'true' }}
         working-directory: environments/dev
+        timeout-minutes: 10
         run: |
           terraform plan -target=module.kinesis -target=module.lambda -target=module.api_gateway
           terraform apply -auto-approve -target=module.kinesis -target=module.lambda -target=module.api_gateway
@@ -127,6 +130,7 @@ jobs:
       - name: Deploy Webapp and Cloudfront
         if: ${{ github.event.inputs.deployRealTimePipeline == 'true' }}
         working-directory: environments/dev
+        timeout-minutes: 10
         run: |
           terraform plan -target=module.cloudfront -target=module.s3_webapp
           terraform apply -auto-approve -target=module.cloudfront -target=module.s3_webapp
@@ -136,15 +140,3 @@ jobs:
         run: |
           make update-api-url
           make deploy-webapp
-
-      - name: Debug Terraform State
-        working-directory: environments/dev
-        run: |
-          echo "=== Terraform State ==="
-          terraform state list || echo "No state found"
-
-          echo "=== Terraform Workspace ==="
-          terraform workspace show
-
-          echo "=== Backend Configuration ==="
-          cat .terraform/terraform.tfstate 2>/dev/null || echo "No backend state file"
