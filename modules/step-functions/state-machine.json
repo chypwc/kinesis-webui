@@ -70,6 +70,12 @@
                 "PrimaryContainer": {
                   "Image": "783357654285.dkr.ecr.ap-southeast-2.amazonaws.com/sagemaker-xgboost:1.7-1",
                   "ModelDataUrl.$": "$.TrainingJobOutput.ModelArtifacts.S3ModelArtifacts"
+                },
+                "VpcConfig": {
+                  "SecurityGroupIds": [
+                    "${glue_sagemaker_lambda_security_group_id}"
+                  ],
+                  "Subnets": ${private_subnet_ids}
                 }
               },
               "Next": "CreateEndpointConfig"
@@ -86,13 +92,7 @@
                     "InitialInstanceCount": 1,
                     "InstanceType": "ml.t2.medium"
                   }
-                ],
-                "VpcConfig": {
-                  "SecurityGroupIds": [
-                    "${glue_sagemaker_lambda_security_group_id}"
-                  ],
-                  "Subnets": ${private_subnet_ids}
-                }
+                ]
               },
               "Next": "CreateEndpoint"
             },
