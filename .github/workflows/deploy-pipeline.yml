@@ -136,7 +136,7 @@ jobs:
           terraform apply -auto-approve -target=module.cloudfront -target=module.s3_webapp
 
       - name: Update API URL and Webapp
-        if: ${{ github.event.inputs.deployRealTimePipeline == 'true' }}
+        # if: ${{ github.event.inputs.deployRealTimePipeline == 'true' }}
         run: |
           make update-api-url
           make deploy-webapp

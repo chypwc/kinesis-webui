@@ -39,9 +39,9 @@ update-api-url:
 	FULL_URL="$$API_URL/submit" && \
 	cd ../.. && \
 	echo "🔍 Updating app.js..." && \
-	sed -i.bak "s|const API_GATEWAY_URL = .*|const API_GATEWAY_URL = '$$FULL_URL'|" webapp/js/app.js && \
+	sed -i.bak 's|"https://[^"]*execute-api[^"]*"|"'$$FULL_URL'"|g' webapp/js/app.js && \
 	echo "🔍 Updating server.js..." && \
-	sed -i.bak "s|const API_GATEWAY_URL = .*|const API_GATEWAY_URL = '$$FULL_URL'|" webapp/server.js && \
+	sed -i.bak 's|"https://[^"]*execute-api[^"]*"|"'$$FULL_URL'"|g' webapp/server.js && \
 	echo "✅ Updated API Gateway URL to: $$FULL_URL"
 
 # =============================================================================

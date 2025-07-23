@@ -24,7 +24,7 @@
 // API Gateway endpoint URL - update this with your actual endpoint
 // This URL is automatically updated by the Makefile when running 'make update-api-url'
 const API_GATEWAY_URL =
-  "https://3cafiypchb.execute-api.ap-southeast-2.amazonaws.com/$default/submit";
+  "https://2bvwwdltca.execute-api.ap-southeast-2.amazonaws.com/$default/submit";
 
 // =============================================================================
 // DOM ELEMENT REFERENCES

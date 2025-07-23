@@ -15,6 +15,16 @@ resource "aws_apigatewayv2_api" "api" {
   name          = var.api_name
   protocol_type = "HTTP" # HTTP API type (vs REST API)
 
+  # CORS configuration for web app requests
+  cors_configuration {
+    allow_credentials = false
+    allow_headers     = ["content-type", "x-amz-date", "authorization", "x-api-key", "x-amz-security-token", "x-amz-user-agent"]
+    allow_methods     = ["*"]
+    allow_origins     = ["*"]
+    expose_headers    = ["date", "keep-alive"]
+    max_age           = 86400
+  }
+
   tags = {
     Name        = var.api_name
     Environment = var.env

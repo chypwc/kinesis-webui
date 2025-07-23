@@ -5,7 +5,7 @@ const cors = require("cors");
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-const API_GATEWAY_URL = 'https://3cafiypchb.execute-api.ap-southeast-2.amazonaws.com/$default/submit'
+const API_GATEWAY_URL = 'https://2bvwwdltca.execute-api.ap-southeast-2.amazonaws.com/$default/submit'
 
 // Middleware
 app.use(cors());
