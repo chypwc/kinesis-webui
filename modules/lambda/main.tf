@@ -242,15 +242,6 @@ resource "aws_lambda_function" "api_lambda" {
   depends_on = [aws_s3_object.lambda_zip]
 }
 
-# Lambda permission for API Gateway invocation
-# This allows API Gateway to invoke the Lambda function
-resource "aws_lambda_permission" "api_gateway" {
-  statement_id  = "AllowExecutionFromAPIGateway"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.api_lambda.function_name
-  principal     = "apigateway.amazonaws.com" # API Gateway service principal
-  source_arn    = "arn:aws:execute-api:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:*/*/*"
-}
 
 # Data sources for current AWS account and region information
 # These are used to construct the source ARN for Lambda permissions

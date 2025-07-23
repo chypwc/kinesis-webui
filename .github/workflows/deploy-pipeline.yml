@@ -130,7 +130,7 @@ jobs:
       - name: Deploy Webapp and Cloudfront
         if: ${{ github.event.inputs.deployRealTimePipeline == 'true' }}
         working-directory: environments/dev
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: |
           terraform plan -target=module.cloudfront -target=module.s3_webapp
           terraform apply -auto-approve -target=module.cloudfront -target=module.s3_webapp

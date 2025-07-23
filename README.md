@@ -53,7 +53,7 @@ This project utilizes an XGBoost model for generating product recommendations in
 
 ### Model Training
 
-- **Data Preparation**: Features are engineered using AWS Glue and stored in DynamoDB.
+- **Data Preparation**: Features are engineered using AWS Glue and stored in  S3 and DynamoDB.
 - **Workflow Orchestration**: Step Functions coordinates the entire ML pipeline from feature engineering to model deployment.
 - **Training Environment**: The model is trained using SageMaker's built-in XGBoost algorithm.
 - **Model Artifacts**: The trained model is saved to an S3 bucket for deployment.

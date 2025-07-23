@@ -1,7 +1,15 @@
 {
   "Comment": "A state machine to orchestrate Glue job, SageMaker training, and endpoint creation.",
-  "StartAt": "StartSageMakerTrainingJob",
+  "StartAt": "StartGlueJob",
   "States": {
+    "StartGlueJob": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::glue:startJobRun.sync",
+            "Parameters": {
+                "JobName": "${glue_job_name}"
+            },
+            "Next": "StartSageMakerTrainingJob"
+        },
     "StartSageMakerTrainingJob": {
       "Type": "Task",
       "Resource": "arn:aws:states:::sagemaker:createTrainingJob.sync",

@@ -63,3 +63,13 @@ resource "aws_apigatewayv2_route" "default" {
   route_key = "$default"                                               # Catch-all route
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}" # Lambda integration
 }
+
+# Lambda permission for API Gateway invocation
+# This allows API Gateway to invoke the Lambda function
+resource "aws_lambda_permission" "api_gateway" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = var.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.api.execution_arn}/*/*"
+}
