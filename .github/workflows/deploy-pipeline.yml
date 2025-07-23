@@ -99,7 +99,8 @@ jobs:
         run: |
           terraform plan -var="sklearn_wheel_filename=${{ env.TF_VAR_sklearn_wheel_filename }}" \
           -target=module.glue_job -target=module.dynamodb -target=module.step_functions
-          terraform apply -auto-approve
+          terraform apply -auto-approve -var="sklearn_wheel_filename=${{ env.TF_VAR_sklearn_wheel_filename }}" \
+          -target=module.glue_job -target=module.dynamodb -target=module.step_functions
 
       - name: Execute Step Functions
         if: ${{ github.event.inputs.deployMlPipeline == 'true' }}
@@ -111,22 +112,24 @@ jobs:
         if: ${{ github.event.inputs.deployRealTimePipeline == 'true' }}
         working-directory: environments/dev
         run: |
-          terraform plan -target=module.lambda -target=module.api_gateway
-          terraform apply -auto-approve
+          terraform plan -var="lambda_architecture=${{ env.TF_VAR_lambda_architecture }}" \
+           -target=module.lambda -target=module.api_gateway
+          terraform apply -auto-approve -var="lambda_architecture=${{ env.TF_VAR_lambda_architecture }}" \
+          -target=module.lambda -target=module.api_gateway
 
       - name: Deploy Kinesis Pipeline
         if: ${{ github.event.inputs.deployRealTimePipeline == 'true' }}
         working-directory: environments/dev
         run: |
           terraform plan -target=module.kinesis -target=module.lambda -target=module.api_gateway
-          terraform apply -auto-approve
+          terraform apply -auto-approve -target=module.kinesis -target=module.lambda -target=module.api_gateway
 
       - name: Deploy Webapp and Cloudfront
         if: ${{ github.event.inputs.deployRealTimePipeline == 'true' }}
         working-directory: environments/dev
         run: |
           terraform plan -target=module.cloudfront -target=module.s3_webapp
-          terraform apply -auto-approve
+          terraform apply -auto-approve -target=module.cloudfront -target=module.s3_webapp
 
       - name: Update API URL and Webapp
         if: ${{ github.event.inputs.deployRealTimePipeline == 'true' }}
