@@ -113,9 +113,17 @@ execute-step-function:
 	-aws sagemaker delete-model --model-name xgboost-model || true
 	@echo "🔄 Starting Step Function execution..."
 	@cd environments/dev && \
-	ARN=$$(terraform output -raw step_functions_state_machine_arn) && \
+	if [[ "$$OSTYPE" == "darwin"* ]]; then \
+		ARN=$$(terraform output -raw step_functions_state_machine_arn); \
+	else \
+		ARN=$$(terraform output -raw step_functions_state_machine_arn | sed 's/::debug::Terraform exited with code 0.//g' | grep -E "^arn:aws:states:" | head -1); \
+	fi && \
 	cd ../.. && \
 	echo "Found State Machine ARN: $$ARN" && \
+	if [ -z "$$ARN" ]; then \
+		echo "❌ No valid ARN found in terraform output." && \
+		exit 1; \
+	fi && \
 	EXECUTION_ARN=$$(aws stepfunctions start-execution \
 		--state-machine-arn "$$ARN" \
 		--name "execution-$$(date +%s)" \
