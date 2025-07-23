@@ -66,10 +66,11 @@ update-api-url:
 deploy-webapp:
 	@echo "🚀 Deploying webapp..."
 	@echo "🔍 Getting bucket name..."
-	@cd environments/dev && \
-	BUCKET_NAME=$$(grep "webapp_bucket_name" terraform.tfvars | cut -d'=' -f2 | tr -d ' "') && \
-	echo "🔍 Bucket name: $$BUCKET_NAME" && \
-	cd ../.. && \
+	@if [ -z "$(BUCKET_NAME)" ]; then \
+		echo "❌ BUCKET_NAME is required. Usage: make deploy-webapp BUCKET_NAME=your-bucket-name"; \
+		exit 1; \
+	fi
+	@echo "🚀 Deploying webapp to bucket: $(BUCKET_NAME)"
 	echo "📤 Syncing webapp files to S3..." && \
 	aws s3 sync webapp/ s3://$$BUCKET_NAME \
 		--exclude "node_modules/*" \
@@ -79,7 +80,7 @@ deploy-webapp:
 	echo "🔄 Invalidating CloudFront cache..." && \
 	cd environments/dev && \
 	echo "🔍 Getting CloudFront distribution ID..." && \
-	if [[ "$$OSTYPE" == "darwin"* ]]; then \
+	if [ "$$OSTYPE" == "darwin"* ]; then \
 		DISTRIBUTION_ID=$$(terraform output -raw cloudfront_distribution_id 2>/dev/null || echo ""); \
 	else \
 		DISTRIBUTION_ID=$$(terraform output -raw cloudfront_distribution_id 2>/dev/null | sed 's/::debug::Terraform exited with code 0.//g' | grep -E "^[A-Z0-9]+" | head -1 || echo ""); \
@@ -94,7 +95,7 @@ deploy-webapp:
 	fi && \
 	echo "🔍 Running terraform output for web app URL..." && \
 	cd environments/dev && \
-	if [[ "$$OSTYPE" == "darwin"* ]]; then \
+	if [ "$$OSTYPE" == "darwin"* ]; then \
 		WEBAPP_URL=$$(terraform output -raw webapp_url); \
 	else \
 		WEBAPP_URL=$$(terraform output -raw webapp_url | sed 's/::debug::Terraform exited with code 0.//g' | grep -E "^https://" | head -1); \
