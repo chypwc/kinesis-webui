@@ -70,9 +70,10 @@ kinesis/
 
 ### 🛠️ Manual Terraform
 
-```bash
-# 1. Initialize
-cd environments/dev && terraform init
+1. **Initialize**
+   ```bash
+   cd environments/dev && terraform init
+   ```
 
 2. **Deploy Core Infrastructure**
    ```bash
@@ -98,22 +99,22 @@ cd environments/dev && terraform init
    ```
 
 5. **Deploy services**
-```bash
-terraform apply -target=module.lambda -target=module.api_gateway
-terraform apply -target=module.kinesis -target=module.firehose -target=module.s3_webapp -target=module.cloudfront
-```
+   ```bash
+   terraform apply -target=module.lambda -target=module.api_gateway
+   terraform apply -target=module.kinesis -target=module.firehose -target=module.s3_webapp -target=module.cloudfront
+   ```
 
 6. **Deploy web app**
-```bash
-make update-api-url
-make deploy-webapp BUCKET_NAME=<Your-Buck-Name>
-```
+   ```bash
+   make update-api-url
+   make deploy-webapp BUCKET_NAME=<Your-Buck-Name>
+   ```
 
 **Access URLs:**
-```bash
-terraform output cloudfront_domain_name  # Web app
-terraform output api_gateway_url         # API endpoint
-```
+   ```bash
+   terraform output cloudfront_domain_name  # Web app
+   terraform output api_gateway_url         # API endpoint
+   ```
 
 ## 🧪 Testing
 
