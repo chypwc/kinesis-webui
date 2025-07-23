@@ -79,7 +79,8 @@ jobs:
         if: ${{ github.event.inputs.deployMlPipeline == 'true' }}
         working-directory: environments/dev
         run: |
-          terraform plan -target=module.glue_job -target=module.dynamodb -target=module.step_functions
+          terraform plan -var="sklearn_wheel_filename=${{ env.SKLEARN_WHEEL }}" \
+            -target=module.glue_job -target=module.dynamodb -target=module.step_functions
           terraform apply -auto-approve
 
       - name: Execute Step Functions

@@ -166,7 +166,7 @@ resource "aws_s3_object" "sklearn_wheel" {
   bucket = var.scripts_bucket_name
   key    = "wheels/scikit_learn-1.3.0-py3-none-any.whl"
   source = "${path.module}/wheels/${var.sklearn_wheel_filename}"
-  etag   = filemd5("${path.module}/wheels/scikit_learn-1.7.1-cp311-cp311-macosx_12_0_arm64.whl")
+  etag   = filemd5("${path.module}/wheels/${var.sklearn_wheel_filename}")
 }
 
 # =============================================================================
