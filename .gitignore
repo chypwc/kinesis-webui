@@ -12,7 +12,7 @@ override.tf.json
 *_override.tf.json
 .terraformrc
 terraform.rc
-.tfvars
+terraform.tfvars
 
 # Terraform modules
 modules/*/lambda_function_payload.zip
