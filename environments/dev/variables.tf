@@ -109,3 +109,9 @@ variable "endpoint_config_name" {
   type        = string
   default     = "xgboost-endpoint-config"
 }
+
+variable "lambda_architecture" {
+  description = "Lambda architecture"
+  type        = string
+  default     = "arm64"
+}

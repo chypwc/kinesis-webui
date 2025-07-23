@@ -50,3 +50,19 @@ variable "scaler_key" {
   description = "Key of the scaler.pkl in S3"
   default     = "scale_models/scaler.pkl"
 }
+
+variable "lambda_architecture" {
+  type        = string
+  description = "Lambda architecture"
+  default     = "arm64"
+}
+
+variable "private_subnet_ids" {
+  type        = string
+  description = "ID of the VPC"
+}
+
+variable "glue_sagemaker_lambda_security_group_id" {
+  type        = string
+  description = "ID of the glue_sagemaker_lambda security group"
+}

@@ -39,3 +39,13 @@ variable "env" {
 #   description = "The ARN of the SageMaker role"
 #   type        = string
 # }
+
+variable "private_subnet_ids" {
+  description = "The IDs of the private subnets"
+  type        = list(string)
+}
+
+variable "glue_sagemaker_lambda_security_group_id" {
+  description = "The ID of the glue_sagemaker_lambda security group"
+  type        = string
+}

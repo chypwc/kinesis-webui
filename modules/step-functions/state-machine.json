@@ -52,6 +52,12 @@
           "eval_metric": "logloss,auc",
           "num_round": "1000",
           "early_stopping_rounds": "20"
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            "${glue_sagemaker_lambda_security_group_id}"
+          ],
+          "Subnets": "${private_subnet_ids}"
         }
       },
       "ResultPath": "$.TrainingJobOutput",
@@ -88,7 +94,13 @@
                     "InitialInstanceCount": 1,
                     "InstanceType": "ml.t2.medium"
                   }
-                ]
+                ],
+                "VpcConfig": {
+                  "SecurityGroupIds": [
+                    "${glue_sagemaker_lambda_security_group_id}"
+                  ],
+                  "Subnets": "${private_subnet_ids}"
+                }
               },
               "Next": "CreateEndpoint"
             },

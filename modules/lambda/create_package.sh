@@ -11,13 +11,23 @@ mkdir -p package
 
 echo "--- Building deployment package  ---"
 
-pip install \
+if [[ "$$OSTYPE" == "darwin"* ]]; then
+  pip install \
   --platform manylinux2014_aarch64 \
   --target=./package \
   --implementation cp \
   --python-version 3.12 \
   --only-binary=:all: --upgrade \
-  numpy pandas joblib scikit-learn 
+  numpy pandas joblib scikit-learn
+else \
+  pip install \
+    --platform manylinux2014_x86_64 \
+    --target=./package \
+    --implementation cp \
+    --python-version 3.12 \
+    --only-binary=:all: --upgrade \
+    numpy pandas joblib scikit-learn \
+fi
 
 cd package/sklearn
 # Remove all test, doc, and dev files from all packages

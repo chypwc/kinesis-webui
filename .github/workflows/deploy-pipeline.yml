@@ -7,8 +7,20 @@ on:
         description: "AWS region to deploy to"
         required: true
         default: "ap-southeast-2"
-      deployResource:
-        description: "Deploy AWS resources?"
+      deployS3:
+        description: "Deploy AWS S3s?"
+        required: true
+        default: "false"
+      deployVPC:
+        description: "Deploy AWS VPC?"
+        required: true
+        default: "false"
+      deployMlPipeline:
+        description: "Deploy AWS ML Pipeline?"
+        required: true
+        default: "false"
+      deployRealTimePipeline:
+        description: "Deploy AWS Real Time Pipeline?"
         required: true
         default: "false"
 jobs:
@@ -24,31 +36,74 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ github.event.inputs.region }}
-    
+
       - name: Checkout code
         uses: actions/checkout@v3
-    
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: ${{ env.TF_VERSION }}
-      
+
       - name: Terraform init
+        working-directory: environments/dev
         run: |
-          cd environments/dev
           terraform init
-          cd ../..
+
+      - name: Deploy S3
+        if: ${{ github.event.inputs.deployS3 == 'true' }}
+        working-directory: environments/dev
+        run: |
+          terraform plan -target=module.s3
+          terraform apply -auto-approve
+
+      - name: Deploy VPC
+        if: ${{ github.event.inputs.deployVPC == 'true' }}
+        working-directory: environments/dev
+        run: |
+          terraform plan -target=module.vpc
+          terraform apply -auto-approve
+
+      - name: Deploy Glue Job, DynamoDB, Sagemaker Endpoint, Step Functions
+        if: ${{ github.event.inputs.deployMlPipeline == 'true' }}
+        working-directory: environments/dev
+        run: |
+          terraform plan -target=module.glue_job -target=module.dynamodb -target=module.step_functions
+          terraform apply -auto-approve
+
+      - name: Execute Step Functions
+        if: ${{ github.event.inputs.deployMlPipeline == 'true' }}
+        run: |
+          make execute-step-function
+
+      - name: Lambda Package
+        if: ${{ github.event.inputs.deployRealTimePipeline == 'true' }}
+        working-directory: modules/lambda
+        run: |
+          ./create_package.sh
+      - name: Deploy Lambda and API Gateway
+        if: ${{ github.event.inputs.deployRealTimePipeline == 'true' }}
+        working-directory: environments/dev
+        run: |
+          terraform plan -var="lambda_architecture=x86_64" -target=module.lambda -target=module.api_gateway
+          terraform apply -auto-approve
 
       - name: Deploy Kinesis Pipeline
-        if: ${{ github.event.inputs.deployResource == 'true' }}
+        if: ${{ github.event.inputs.deployRealTimePipeline == 'true' }}
+        working-directory: environments/dev
         run: |
-          cd environments/dev
-          terraform init
-          terraform plan
+          terraform plan -target=module.kinesis -target=module.lambda -target=module.api_gateway
           terraform apply -auto-approve
-          cd ../..
+
+      - name: Deploy Webapp and Cloudfront
+        if: ${{ github.event.inputs.deployRealTimePipeline == 'true' }}
+        working-directory: environments/dev
+        run: |
+          terraform plan -target=module.cloudfront -target=module.s3_webapp
+          terraform apply -auto-approve
 
       - name: Update API URL and Webapp
+        if: ${{ github.event.inputs.deployRealTimePipeline == 'true' }}
         run: |
           make update-api-url
           make deploy-webapp

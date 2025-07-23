@@ -77,6 +77,8 @@ The project uses AWS Step Functions to orchestrate the complete machine learning
 
 The Step Functions workflow ensures that each step completes successfully before proceeding to the next, providing a reliable and automated ML pipeline.
 
+![](./images/stepfunctions.png)
+
 ## 🎯 Features
 
 ### Web Application

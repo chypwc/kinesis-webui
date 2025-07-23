@@ -107,3 +107,13 @@ variable "user_features_table_arn" {
   description = "ARN of the user_features DynamoDB table"
   type        = string
 }
+
+variable "private_subnet_ids" {
+  description = "The IDs of the private subnets"
+  type        = list(string)
+}
+
+variable "glue_sagemaker_lambda_security_group_id" {
+  description = "The ID of the glue_sagemaker_lambda security group"
+  type        = string
+}

@@ -23,6 +23,16 @@ module "s3" {
   env                  = var.env
 }
 
+# VPC
+module "vpc" {
+  source               = "../../modules/vpc"
+  env                  = var.env
+  region               = var.region
+  vpc_cidr_block       = "10.1.0.0/16"
+  public_subnet_cidrs  = ["10.1.1.0/24", "10.1.2.0/24"]
+  private_subnet_cidrs = ["10.1.3.0/24", "10.1.4.0/24"]
+}
+
 # Kinesis Data Stream
 module "kinesis" {
   source = "../../modules/kinesis"
@@ -47,12 +57,15 @@ module "firehose" {
 module "lambda" {
   source = "../../modules/lambda"
 
-  function_name       = var.lambda_function_name
-  handler             = var.lambda_handler
-  runtime             = var.lambda_runtime
-  kinesis_stream_name = module.kinesis.stream_name
-  lambda_bucket       = module.s3.output_bucket_name
-  env                 = var.env
+  function_name                           = var.lambda_function_name
+  handler                                 = var.lambda_handler
+  runtime                                 = var.lambda_runtime
+  kinesis_stream_name                     = module.kinesis.stream_name
+  lambda_bucket                           = module.s3.output_bucket_name
+  env                                     = var.env
+  lambda_architecture                     = var.lambda_architecture
+  private_subnet_ids                      = module.vpc.private_subnet_ids
+  glue_sagemaker_lambda_security_group_id = module.vpc.glue_sagemaker_lambda_security_group_id
 }
 
 # API Gateway
@@ -108,22 +121,24 @@ module "dynamodb" {
 module "glue_job" {
   source = "../../modules/glue-job"
 
-  job_name                        = "feature-engineering"
-  job_description                 = "Feature engineering job for Instacart data analysis"
-  database_name                   = "imba_raw"
-  script_location                 = "s3://${module.s3.scripts_bucket_name}/features.py"
-  scripts_bucket_name             = module.s3.scripts_bucket_name
-  glue_script_bucket_arn          = module.s3.scripts_bucket_arn
-  output_bucket_arn               = module.s3.output_bucket_arn
-  output_bucket_name              = module.s3.output_bucket_name
-  data_bucket_arn                 = "arn:aws:s3:::imba-chien"
-  products_table_arn              = module.dynamodb.products_table_arn
-  user_product_features_table_arn = module.dynamodb.user_product_features_table_arn
-  product_features_table_arn      = module.dynamodb.product_features_table_arn
-  user_features_table_arn         = module.dynamodb.user_features_table_arn
-  max_retries                     = 0
-  number_of_workers               = 4
-  env                             = var.env
+  job_name                                = "feature-engineering"
+  job_description                         = "Feature engineering job for Instacart data analysis"
+  database_name                           = "imba_raw"
+  script_location                         = "s3://${module.s3.scripts_bucket_name}/features.py"
+  scripts_bucket_name                     = module.s3.scripts_bucket_name
+  glue_script_bucket_arn                  = module.s3.scripts_bucket_arn
+  output_bucket_arn                       = module.s3.output_bucket_arn
+  output_bucket_name                      = module.s3.output_bucket_name
+  data_bucket_arn                         = "arn:aws:s3:::imba-chien"
+  products_table_arn                      = module.dynamodb.products_table_arn
+  user_product_features_table_arn         = module.dynamodb.user_product_features_table_arn
+  product_features_table_arn              = module.dynamodb.product_features_table_arn
+  user_features_table_arn                 = module.dynamodb.user_features_table_arn
+  max_retries                             = 0
+  number_of_workers                       = 4
+  private_subnet_ids                      = module.vpc.private_subnet_ids
+  glue_sagemaker_lambda_security_group_id = module.vpc.glue_sagemaker_lambda_security_group_id
+  env                                     = var.env
 
 }
 
@@ -142,14 +157,16 @@ module "sagemaker_notebook" {
 
 # Step Functions
 module "step_functions" {
-  source               = "../../modules/step-functions"
-  input_bucket         = module.s3.output_bucket_name
-  input_key            = "features/train_scaled/"
-  glue_job_name        = module.glue_job.job_name
-  training_job_name    = var.training_job_name
-  endpoint_name        = var.endpoint_name
-  endpoint_config_name = var.endpoint_config_name
-  env                  = var.env
+  source                                  = "../../modules/step-functions"
+  input_bucket                            = module.s3.output_bucket_name
+  input_key                               = "features/train_scaled/"
+  glue_job_name                           = module.glue_job.job_name
+  training_job_name                       = var.training_job_name
+  endpoint_name                           = var.endpoint_name
+  endpoint_config_name                    = var.endpoint_config_name
+  private_subnet_ids                      = module.vpc.private_subnet_ids
+  glue_sagemaker_lambda_security_group_id = module.vpc.glue_sagemaker_lambda_security_group_id
+  env                                     = var.env
 }
 
 # Data source for current region

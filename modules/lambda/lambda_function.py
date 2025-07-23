@@ -67,26 +67,57 @@ def batch_get_items(table_name, keys):
     return results
 
 def get_recommendations(data):
-    # Build user-product DataFrame
-    df = pd.DataFrame({
-        "user_id": [data["user_id"]] * len(data["product_ids"]),
-        "product_id": data["product_ids"]
-    })
-    user_product_features_db = dynamodb.Table('user_product_features')
-    user_id = data["user_id"]
-    response = user_product_features_db.query(
-        KeyConditionExpression=boto3.dynamodb.conditions.Key('user_id').eq(user_id)
-    )
-    user_product_features = convert_decimals(response['Items'])
-    user_product_features = pd.DataFrame(user_product_features)
+    print(f"🎯 get_recommendations called with data: {json.dumps(data) if isinstance(data, dict) else str(data)}")
+    
+    try:
+        # Validate input data
+        if not isinstance(data, dict):
+            raise ValueError(f"Expected dict, got {type(data)}")
+        
+        if "user_id" not in data:
+            raise ValueError("Missing 'user_id' in request data")
+        
+        if "product_ids" not in data or not data["product_ids"]:
+            print("⚠️ No product_ids provided, returning empty recommendations")
+            return []
+        
+        user_id = data["user_id"]
+        product_ids = data["product_ids"]
+        print(f"👤 Processing user_id: {user_id}, product_ids: {product_ids}")
+        
+        # Build user-product DataFrame
+        df = pd.DataFrame({
+            "user_id": [user_id] * len(product_ids),
+            "product_id": product_ids
+        })
+        print(f"📊 Created DataFrame with shape: {df.shape}")
+        
+        # Query DynamoDB for user features
+        print("🔍 Querying DynamoDB for user features...")
+        user_product_features_db = dynamodb.Table('user_product_features')
+        response = user_product_features_db.query(
+            KeyConditionExpression=boto3.dynamodb.conditions.Key('user_id').eq(user_id)
+        )
+        print(f"📥 DynamoDB response: {len(response['Items'])} items found")
+        
+        if not response['Items']:
+            print(f"⚠️ No features found for user_id {user_id}")
+            return []
+        
+        user_product_features = convert_decimals(response['Items'])
+        user_product_features = pd.DataFrame(user_product_features)
+        print(f"📊 Features DataFrame shape: {user_product_features.shape}, columns: {list(user_product_features.columns)}")
+    
+    except Exception as e:
+        print(f"❌ Error in get_recommendations setup: {str(e)}")
+        raise
 
 
     # Prepare test features for prediction
     X_test = user_product_features.drop(columns=["user_id", "product_id"])
-    X_test = X_test[['user_orders', 'user_periods', 'user_mean_days_since_prior',
-       'user_products', 'user_distinct_products', 'user_reorder_ratio',
-       'prod_orders', 'prod_reorders', 'prod_first_orders',
-       'prod_second_orders']]
+    X_test = X_test[['user_orders_scaled', 'user_periods_scaled', 'user_mean_days_since_prior_scaled', 
+                    'user_products_scaled', 'user_distinct_products_scaled', 'user_reorder_ratio_scaled', 
+                    'prod_orders_scaled', 'prod_reorders_scaled', 'prod_first_orders_scaled', 'prod_second_orders_scaled']]
     print("DEBUG: X_test columns before scaling:", X_test.columns)
     
     # Convert DataFrame to CSV string for SageMaker endpoint
@@ -142,8 +173,12 @@ def get_recommendations(data):
 
 
 def lambda_handler(event, context):
+    print(f"🚀 Lambda function started. Event: {json.dumps(event)}")
+    print(f"🔍 Context: {context}")
+    
     # CORS PREFLIGHT HANDLING
     if event.get('httpMethod', event.get('requestContext', {}).get('http', {}).get('method')) == 'OPTIONS':
+        print("✅ CORS preflight request handled")
         return {
             'statusCode': 200,
             'headers': {
@@ -156,14 +191,27 @@ def lambda_handler(event, context):
         }
 
     try:
+        print("🔧 Starting main processing...")
+        
         # ENVIRONMENT VARIABLE VALIDATION
-        stream_name = os.environ['KINESIS_STREAM']
+        stream_name = os.environ.get('KINESIS_STREAM')
+        endpoint_name = os.environ.get('ENDPOINT_NAME')
+        print(f"📋 Environment variables - KINESIS_STREAM: {stream_name}, ENDPOINT_NAME: {endpoint_name}")
+        
+        if not stream_name:
+            raise ValueError("KINESIS_STREAM environment variable not set")
+        if not endpoint_name:
+            raise ValueError("ENDPOINT_NAME environment variable not set")
 
         # REQUEST BODY PARSING
         if 'body' in event:
+            print("📥 Parsing JSON body from event")
             body = json.loads(event['body'])
         else:
+            print("📥 Using event as body directly")
             body = event
+            
+        print(f"📊 Parsed body: {json.dumps(body)}")
 
         # DATA ENRICHMENT
         record_data = {
@@ -182,9 +230,17 @@ def lambda_handler(event, context):
         )
 
         # Get recommendations (will return [] if product_ids is missing or empty)
-        recommendations = get_recommendations(body)
+        print("🤖 Starting recommendation generation...")
+        try:
+            recommendations = get_recommendations(body)
+            print(f"✅ Generated {len(recommendations)} recommendations")
+        except Exception as rec_error:
+            print(f"❌ Error in get_recommendations: {rec_error}")
+            print(f"📚 Traceback: {str(rec_error.__class__.__name__)}: {str(rec_error)}")
+            recommendations = []  # Return empty recommendations on error
 
         # SUCCESS RESPONSE
+        print("✅ Sending success response")
         return {
             'statusCode': 200,
             'headers': {
@@ -202,6 +258,11 @@ def lambda_handler(event, context):
         }
 
     except Exception as e:
+        print(f"❌ Lambda function error: {str(e)}")
+        print(f"📚 Error type: {str(e.__class__.__name__)}")
+        import traceback
+        print(f"📚 Full traceback: {traceback.format_exc()}")
+        
         return {
             'statusCode': 500,
             'headers': {
@@ -212,6 +273,7 @@ def lambda_handler(event, context):
             },
             'body': json.dumps({
                 'error': str(e),
+                'error_type': str(e.__class__.__name__),
                 'message': 'Failed to process request'
             })
         } 

@@ -180,28 +180,33 @@ resource "aws_iam_role_policy_attachment" "lambda_s3_getobject_attach" {
 # Lambda function configuration
 # This creates the actual serverless function that processes API requests
 resource "aws_lambda_function" "api_lambda" {
-  s3_bucket     = var.lambda_bucket
-  s3_key        = "lambda/lambda_function_payload.zip"
+  s3_bucket        = var.lambda_bucket
+  s3_key           = "lambda/lambda_function_payload.zip"
   function_name    = var.function_name
-  role             = aws_iam_role.lambda_role.arn                     # IAM role for permissions
-  handler          = var.handler                                      # Function entry point
-  runtime          = var.runtime                                      # Python runtime
+  role             = aws_iam_role.lambda_role.arn                                   # IAM role for permissions
+  handler          = var.handler                                                    # Function entry point
+  runtime          = var.runtime                                                    # Python runtime
   source_code_hash = filebase64sha256("${path.module}/lambda_function_payload.zip") # For updates
-  timeout          = 120                                               # Function timeout in seconds
-  architectures    = ["arm64"]  # x86_64 on GitHub Actions
+  timeout          = 120                                                            # Function timeout in seconds
+  architectures    = ["${var.lambda_architecture}"]                                 # x86_64 on GitHub Actions
 
   # layers = [
   #   "arn:aws:lambda:${data.aws_region.current.name}:336392948345:layer:AWSSDKPandas-Python312:18"
   # ]
+
+  vpc_config {
+    subnet_ids         = [var.private_subnet_ids]
+    security_group_ids = [var.glue_sagemaker_lambda_security_group_id]
+  }
 
   # Environment variables passed to the Lambda function
   # These are accessible within the function code
   environment {
     variables = {
       KINESIS_STREAM = var.kinesis_stream_name # Stream name for data delivery
-      ENDPOINT_NAME = var.endpoint_name
-      SCALER_BUCKET = var.scaler_bucket
-      SCALER_KEY = var.scaler_key
+      ENDPOINT_NAME  = var.endpoint_name
+      # SCALER_BUCKET  = var.scaler_bucket
+      # SCALER_KEY     = var.scaler_key
     }
   }
 

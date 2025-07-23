@@ -71,14 +71,16 @@ resource "aws_sfn_state_machine" "sagemaker_workflow" {
   role_arn = aws_iam_role.sfn_role.arn
 
   definition = templatefile("${path.module}/state-machine.json", {
-    input_bucket                 = var.input_bucket,
-    input_key                    = var.input_key,
-    glue_job_name                = var.glue_job_name,
-    training_job_name            = var.training_job_name,
-    endpoint_name                = var.endpoint_name,
-    model_name                   = "xgboost-model",
-    endpoint_config_name         = var.endpoint_config_name,
-    sagemaker_execution_role_arn = aws_iam_role.sagemaker_execution_role.arn
+    input_bucket                            = var.input_bucket,
+    input_key                               = var.input_key,
+    glue_job_name                           = var.glue_job_name,
+    training_job_name                       = var.training_job_name,
+    endpoint_name                           = var.endpoint_name,
+    model_name                              = "xgboost-model",
+    endpoint_config_name                    = var.endpoint_config_name,
+    sagemaker_execution_role_arn            = aws_iam_role.sagemaker_execution_role.arn
+    private_subnet_ids                      = var.private_subnet_ids
+    glue_sagemaker_lambda_security_group_id = var.glue_sagemaker_lambda_security_group_id
   })
 }
 
