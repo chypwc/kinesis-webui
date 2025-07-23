@@ -30,6 +30,17 @@ jobs:
       TF_VERSION: 1.6.0
       TF_VAR_lambda_architecture: "x86_64"
       TF_VAR_sklearn_wheel_filename: "scikit_learn-1.7.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl"
+      TF_VAR_env: "dev"
+      TF_VAR_region: "ap-southeast-2"
+      TF_VAR_firehose_bucket_name: "firehose-bucket-chien"
+      TF_VAR_kinesis_stream_name: "api-kinesis-stream"
+      TF_VAR_firehose_stream_name: "api-firehose-stream"
+      TF_VAR_lambda_function_name: "api-lambda-function"
+      TF_VAR_api_gateway_name: "api-gateway"
+      TF_VAR_webapp_bucket_name: "webapp-bucket-chien"
+      TF_VAR_cloudfront_distribution_name: "kinesis-webapp-distribution"
+      TF_VAR_scripts_bucket_name: "imba-chien-glue-scripts"
+
     steps:
       - name: Configure AWS credentials
         id: creds
@@ -98,9 +109,9 @@ jobs:
         working-directory: environments/dev
         timeout-minutes: 15
         run: |
-          terraform plan -var="sklearn_wheel_filename=${{ env.TF_VAR_sklearn_wheel_filename }}" \
+          terraform plan \
           -target=module.glue_job -target=module.dynamodb -target=module.step_functions
-          terraform apply -auto-approve -var="sklearn_wheel_filename=${{ env.TF_VAR_sklearn_wheel_filename }}" \
+          terraform apply -auto-approve \
           -target=module.glue_job -target=module.dynamodb -target=module.step_functions
 
       - name: Execute Step Functions
@@ -114,10 +125,10 @@ jobs:
         working-directory: environments/dev
         timeout-minutes: 15
         run: |
-          terraform plan -var="lambda_architecture=${{ env.TF_VAR_lambda_architecture }}" \
-           -target=module.lambda -target=module.api_gateway
-          terraform apply -auto-approve -var="lambda_architecture=${{ env.TF_VAR_lambda_architecture }}" \
-          -target=module.lambda -target=module.api_gateway
+          terraform plan \
+            -target=module.lambda -target=module.api_gateway
+          terraform apply -auto-approve \
+            -target=module.lambda -target=module.api_gateway
 
       - name: Deploy Kinesis Pipeline
         if: ${{ github.event.inputs.deployRealTimePipeline == 'true' }}
@@ -127,7 +138,7 @@ jobs:
           terraform plan -target=module.kinesis -target=module.lambda -target=module.api_gateway
           terraform apply -auto-approve -target=module.kinesis -target=module.lambda -target=module.api_gateway
 
-      - name: Deploy Webapp and Cloudfront
+      - name: Deploy Cloudfront
         if: ${{ github.event.inputs.deployRealTimePipeline == 'true' }}
         working-directory: environments/dev
         timeout-minutes: 15

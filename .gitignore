@@ -12,6 +12,7 @@ override.tf.json
 *_override.tf.json
 .terraformrc
 terraform.rc
+.tfvars
 
 # Terraform modules
 modules/*/lambda_function_payload.zip
@@ -302,3 +303,4 @@ package/
 # Python wheels
 modules/glue-job/wheels/
 *.whl
+
