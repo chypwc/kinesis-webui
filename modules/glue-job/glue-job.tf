@@ -216,8 +216,23 @@ resource "aws_glue_job" "feature_engineering" {
 
 resource "aws_glue_connection" "vpc_connection" {
   name = "glue-vpc-connection-${var.env}"
+
+  connection_type = "NETWORK"
+
   physical_connection_requirements {
     subnet_id              = var.private_subnet_ids[0]
     security_group_id_list = [var.glue_sagemaker_lambda_security_group_id]
+    availability_zone      = data.aws_subnet.glue_subnet.availability_zone
+  }
+
+  tags = {
+    Name        = "glue-vpc-connection-${var.env}"
+    Environment = var.env
   }
 }
+
+data "aws_subnet" "glue_subnet" {
+  id = var.private_subnet_ids[0]
+}
+
+

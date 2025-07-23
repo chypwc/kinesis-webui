@@ -58,7 +58,7 @@ variable "lambda_architecture" {
 }
 
 variable "private_subnet_ids" {
-  type        = string
+  type        = list(string)
   description = "ID of the VPC"
 }
 

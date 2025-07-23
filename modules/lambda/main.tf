@@ -145,6 +145,29 @@ resource "aws_iam_policy" "lambda_sagemaker_dynamodb_policy" {
   })
 }
 
+resource "aws_iam_role_policy" "lambda_vpc" {
+  name = "lambda-vpc-policy"
+  role = aws_iam_role.lambda_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:CreateNetworkInterface",
+          "ec2:DescribeNetworkInterfaces",
+          "ec2:DeleteNetworkInterface",
+          "ec2:AssignPrivateIpAddresses",
+          "ec2:UnassignPrivateIpAddresses"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+
 resource "aws_iam_role_policy_attachment" "lambda_sagemaker_dynamodb_attach" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = aws_iam_policy.lambda_sagemaker_dynamodb_policy.arn
@@ -195,7 +218,7 @@ resource "aws_lambda_function" "api_lambda" {
   # ]
 
   vpc_config {
-    subnet_ids         = [var.private_subnet_ids]
+    subnet_ids         = var.private_subnet_ids
     security_group_ids = [var.glue_sagemaker_lambda_security_group_id]
   }
 

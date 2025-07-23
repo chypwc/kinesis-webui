@@ -67,7 +67,7 @@ resource "aws_iam_role_policy_attachment" "sfn_policy_attach" {
 }
 
 resource "aws_sfn_state_machine" "sagemaker_workflow" {
-  name     = "SageMakerWorkflow-${var.env}"
+  name     = "sagemaker-workflow-${var.env}"
   role_arn = aws_iam_role.sfn_role.arn
 
   definition = templatefile("${path.module}/state-machine.json", {
@@ -78,10 +78,15 @@ resource "aws_sfn_state_machine" "sagemaker_workflow" {
     endpoint_name                           = var.endpoint_name,
     model_name                              = "xgboost-model",
     endpoint_config_name                    = var.endpoint_config_name,
-    sagemaker_execution_role_arn            = aws_iam_role.sagemaker_execution_role.arn
-    private_subnet_ids                      = var.private_subnet_ids
+    sagemaker_execution_role_arn            = aws_iam_role.sagemaker_execution_role.arn,
+    private_subnet_ids                      = jsonencode(var.private_subnet_ids),
     glue_sagemaker_lambda_security_group_id = var.glue_sagemaker_lambda_security_group_id
   })
+
+  tags = {
+    Name        = "sagemaker-workflow-${var.env}"
+    Environment = var.env
+  }
 }
 
 resource "aws_iam_role" "sagemaker_execution_role" {

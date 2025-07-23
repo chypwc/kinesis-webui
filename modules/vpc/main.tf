@@ -146,16 +146,26 @@ resource "aws_vpc_endpoint" "glue" {
   }
 }
 
-resource "aws_vpc_endpoint" "sagemaker" {
-  vpc_id             = aws_vpc.main.id
-  service_name       = "com.amazonaws.ap-southeast-2.sagemaker"
-  vpc_endpoint_type  = "Interface"
-  subnet_ids         = aws_subnet.private[*].id
-  security_group_ids = [aws_security_group.glue_sagemaker_lambda.id] # ✅ REQUIRED
-
+resource "aws_vpc_endpoint" "sagemaker_api" {
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.ap-southeast-2.sagemaker.api"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.private[*].id
+  security_group_ids  = [aws_security_group.glue_sagemaker_lambda.id]
   private_dns_enabled = true
-
   tags = {
-    Name = "${var.env}-sagemaker-endpoint"
+    Name = "${var.env}-sagemaker-api-endpoint"
+  }
+}
+
+resource "aws_vpc_endpoint" "sagemaker_runtime" {
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.ap-southeast-2.sagemaker.runtime"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.private[*].id
+  security_group_ids  = [aws_security_group.glue_sagemaker_lambda.id]
+  private_dns_enabled = true
+  tags = {
+    Name = "${var.env}-sagemaker-runtime-endpoint"
   }
 }
