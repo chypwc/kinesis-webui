@@ -28,6 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TF_VERSION: 1.6.0
+      TF_VAR_lambda_architecture: "x86_64"
     steps:
       - name: Configure AWS credentials
         id: creds
@@ -54,17 +55,18 @@ jobs:
       - name: Glue package wheels
         working-directory: modules/glue-job
         run: |
-          # Debug: Check if script exists
-          ls -la create_wheel.sh
-
-          # Make executable and run
-          chmod +x create_wheel.sh
+          echo "=== Creating wheels ==="
           ./create_wheel.sh
 
-          # Set environment variable
-          SKLEARN_WHEEL=$(ls wheels/scikit_learn-*.whl | head -1 | xargs basename)
-          echo "SKLEARN_WHEEL=$SKLEARN_WHEEL" >> $GITHUB_ENV
-          echo "Selected wheel: $SKLEARN_WHEEL"
+          echo "=== Wheels created ==="
+          ls -la wheels/
+
+          # Get the actual wheel filename and update the environment variable
+          ACTUAL_SKLEARN_WHEEL=$(ls wheels/scikit_learn-*.whl | head -1 | xargs basename)
+          echo "ACTUAL_SKLEARN_WHEEL=$ACTUAL_SKLEARN_WHEEL" >> $GITHUB_ENV
+          echo "TF_VAR_sklearn_wheel_filename=$ACTUAL_SKLEARN_WHEEL" >> $GITHUB_ENV
+
+          echo "Using wheel: $ACTUAL_SKLEARN_WHEEL"
 
       - name: Terraform init
         working-directory: environments/dev
@@ -81,18 +83,20 @@ jobs:
       - name: Deploy VPC
         if: ${{ github.event.inputs.deployVPC == 'true' }}
         working-directory: environments/dev
-        env:
-          TF_VAR_sklearn_wheel_filename: ${{ env.SKLEARN_WHEEL }}
+        timeout-minutes: 10 # Add timeout
+        continue-on-error: false # Ensure errors are shown
         run: |
+          set -e  # Exit on any error
+          set -x  # Show commands being executed
+
           terraform plan -target=module.vpc
-          terraform apply -auto-approve
+          terraform apply -auto-approve -target=module.vpc
 
       - name: Deploy Glue Job, DynamoDB, Sagemaker Endpoint, Step Functions
         if: ${{ github.event.inputs.deployMlPipeline == 'true' }}
         working-directory: environments/dev
         run: |
-          terraform plan -var="sklearn_wheel_filename=${{ env.SKLEARN_WHEEL }}" \
-            -target=module.glue_job -target=module.dynamodb -target=module.step_functions
+          terraform plan -target=module.glue_job -target=module.dynamodb -target=module.step_functions
           terraform apply -auto-approve
 
       - name: Execute Step Functions
@@ -103,8 +107,6 @@ jobs:
       - name: Deploy Lambda and API Gateway
         if: ${{ github.event.inputs.deployRealTimePipeline == 'true' }}
         working-directory: environments/dev
-        env:
-          TF_VAR_lambda_architecture: "x86_64"
         run: |
           terraform plan -target=module.lambda -target=module.api_gateway
           terraform apply -auto-approve
@@ -128,3 +130,15 @@ jobs:
         run: |
           make update-api-url
           make deploy-webapp
+
+      - name: Debug Terraform State
+        working-directory: environments/dev
+        run: |
+          echo "=== Terraform State ==="
+          terraform state list || echo "No state found"
+
+          echo "=== Terraform Workspace ==="
+          terraform workspace show
+
+          echo "=== Backend Configuration ==="
+          cat .terraform/terraform.tfstate 2>/dev/null || echo "No backend state file"
