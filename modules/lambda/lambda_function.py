@@ -77,20 +77,16 @@ def get_recommendations(data):
         if "user_id" not in data:
             raise ValueError("Missing 'user_id' in request data")
         
-        if "product_ids" not in data or not data["product_ids"]:
-            print("⚠️ No product_ids provided, returning empty recommendations")
-            return []
-        
         user_id = data["user_id"]
         product_ids = data["product_ids"]
         print(f"👤 Processing user_id: {user_id}, product_ids: {product_ids}")
         
-        # Build user-product DataFrame
-        df = pd.DataFrame({
-            "user_id": [user_id] * len(product_ids),
-            "product_id": product_ids
-        })
-        print(f"📊 Created DataFrame with shape: {df.shape}")
+        # # Build user-product DataFrame
+        # df = pd.DataFrame({
+        #     "user_id": [user_id] * len(product_ids),
+        #     "product_id": product_ids
+        # })
+        # print(f"📊 Created DataFrame with shape: {df.shape}")
         
         # Query DynamoDB for user features
         print("🔍 Querying DynamoDB for user features...")
