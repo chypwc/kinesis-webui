@@ -119,5 +119,5 @@ variable "lambda_architecture" {
 variable "sklearn_wheel_filename" {
   description = "The filename of the scikit-learn wheel"
   type        = string
-
+  default     = null
 }

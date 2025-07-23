@@ -163,8 +163,9 @@ resource "aws_s3_object" "joblib_wheel" {
 }
 
 resource "aws_s3_object" "sklearn_wheel" {
+  count  = var.sklearn_wheel_filename != null ? 1 : 0
   bucket = var.scripts_bucket_name
-  key    = "wheels/scikit_learn-1.3.0-py3-none-any.whl"
+  key    = "wheels/${var.sklearn_wheel_filename}"
   source = "${path.module}/wheels/${var.sklearn_wheel_filename}"
   etag   = filemd5("${path.module}/wheels/${var.sklearn_wheel_filename}")
 }
