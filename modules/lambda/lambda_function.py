@@ -79,15 +79,6 @@ def get_recommendations(data):
         
         user_id = data["user_id"]
         print(f"🔍 Processing recommendations for user_id: {user_id}")
-        product_ids = data["product_ids"]
-        print(f"👤 Processing user_id: {user_id}, product_ids: {product_ids}")
-        
-        # # Build user-product DataFrame
-        # df = pd.DataFrame({
-        #     "user_id": [user_id] * len(product_ids),
-        #     "product_id": product_ids
-        # })
-        # print(f"📊 Created DataFrame with shape: {df.shape}")
         
         # Query DynamoDB for user features
         print("🔍 Querying DynamoDB for user features...")
