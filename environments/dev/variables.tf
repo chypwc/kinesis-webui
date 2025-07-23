@@ -119,5 +119,5 @@ variable "lambda_architecture" {
 variable "sklearn_wheel_filename" {
   description = "The filename of the scikit-learn wheel"
   type        = string
-  default     = "scikit_learn-1.7.1-cp311-cp311-macosx_12_0_arm64.whl"
+
 }
