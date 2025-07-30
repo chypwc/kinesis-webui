@@ -134,6 +134,14 @@ curl -X POST https://your-api-gateway-url/submit \
 }
 ```
 
+### Test Lambda Function
+```json
+{
+  "body": "{\"user_id\": 1569, \"product_ids\": [\"123\", \"55\"], \"event\": \"add_to_cart\"}"
+}
+```
+
+
 ## 🛠️ Development
 
 **Local Development:**
